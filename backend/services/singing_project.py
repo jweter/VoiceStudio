@@ -71,8 +71,7 @@ class SingingProject:
 
 def save_project(project: SingingProject, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(project.to_dict(), indent=2, sort_keys=True) + "
-"
+    payload = json.dumps(project.to_dict(), indent=2, sort_keys=True) + chr(10)
     temp = path.with_suffix(path.suffix + ".tmp")
     temp.write_text(payload, encoding="utf-8")
     temp.replace(path)
