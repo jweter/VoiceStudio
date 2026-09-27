@@ -79,9 +79,11 @@ def _family_payload(family: str, module, *, singing_capability: str | None = Non
             instance = getattr(tts_backend, "_active_instance", None)
             if instance is not None and getattr(tts_backend, "_active_instance_id", None) == active:
                 model = instance.model_identity()
-    if family == "tts":
+    if family == "tts" and singing_capability is not None:
         rows = module.list_backends(singing_capability=singing_capability)
     else:
+        # Preserve the legacy zero-argument seam for ordinary catalogue reads
+        # and existing test/plugin shims. Singing filtering is opt-in only.
         rows = module.list_backends()
     backends = public_backends(rows)
     if family == "tts":
