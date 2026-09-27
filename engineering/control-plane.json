@@ -1,9 +1,9 @@
 {
   "schema_version": 4,
   "portfolio_project": "VoiceStudio Singing",
-  "repository": "jweter/VoiceStudio",
+  "repository": "debpalash/VoiceStudio",
   "repository_role": "standalone",
-  "source_of_truth": "GitHub repository state plus authoritative documents listed below",
+  "source_of_truth": "Canonical upstream GitHub work ownership (debpalash/VoiceStudio), fork implementation state (jweter/VoiceStudio), plus authoritative documents listed below",
   "authoritative_documents": [
     "docs/projects/singing-mode.md",
     "docs/ROADMAP.md",
@@ -73,9 +73,13 @@
             "bun",
             "run",
             "check:electron"
+          ],
+          [
+            "python",
+            "engineering/renderer_smoke.py"
           ]
         ],
-        "evidence": "mirrors the maintained required CI backend/frontend gate without browser Product Reality"
+        "evidence": "mirrors the maintained required backend/frontend gate, including renderer workflow smokes; browser installation is provisioned by preflight"
       }
     ]
   },
@@ -86,7 +90,9 @@
       "open issues with active implementation evidence",
       "recent focused branches/commits when attributable"
     ],
-    "rule": "do not duplicate or compete with active work; prefer finishing existing work"
+    "rule": "do not duplicate or compete with active work; prefer finishing existing work",
+    "canonical_repository": "debpalash/VoiceStudio",
+    "development_repository": "jweter/VoiceStudio"
   },
   "readiness_scoring": {
     "mode": "evidence-derived",
@@ -184,6 +190,17 @@
         "fast": false
       },
       {
+        "id": "playwright_chromium_environment",
+        "argv": [
+          "bunx",
+          "playwright",
+          "install",
+          "chromium"
+        ],
+        "kind": "environment",
+        "fast": false
+      },
+      {
         "id": "electron_contract",
         "argv": [
           "bun",
@@ -192,7 +209,17 @@
         ],
         "kind": "test",
         "fast": false
+      },
+      {
+        "id": "renderer_workflow_smokes",
+        "argv": [
+          "python",
+          "engineering/renderer_smoke.py"
+        ],
+        "kind": "test",
+        "fast": false
       }
     ]
-  }
+  },
+  "development_repository": "jweter/VoiceStudio"
 }
