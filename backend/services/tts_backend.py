@@ -243,6 +243,12 @@ class TTSBackend(ABC):
     #: so this is a discoverability hint, not an enforcement gate.
     supports_emotion: bool = False
 
+    # Singing is an explicit capability. Speech cloning must never imply that
+    # an engine can preserve a sung melody/timing or synthesize notes.
+    supports_singing_conversion: bool = False
+    supports_singing_synthesis: bool = False
+    supports_pitch_conditioning: bool = False
+
     def ensure_ready(self) -> None:
         """Load model weights now (blocking), so callers can separate the
         LOAD budget from the GENERATE budget (#1033/#1037 class).
@@ -3420,6 +3426,12 @@ def list_backends(*, include_hidden: bool = False) -> list[dict]:
             # Graded-emotion capability (#1208) — drives the Audiobook emotion
             # panel's engine gate. Class attr, defaults False.
             "supports_emotion": bool(getattr(cls, "supports_emotion", False)),
+            # Singing capabilities are fail-closed. Existing TTS/cloning
+            # engines remain speech-only until a singing adapter explicitly
+            # opts in and has repository-native validation.
+            "supports_singing_conversion": bool(getattr(cls, "supports_singing_conversion", False)),
+            "supports_singing_synthesis": bool(getattr(cls, "supports_singing_synthesis", False)),
+            "supports_pitch_conditioning": bool(getattr(cls, "supports_pitch_conditioning", False)),
             # Reference-length truth (#2281): how much of a clone clip the
             # engine really uses and how it picks it. None = not verified.
             "max_ref_seconds": getattr(cls, "max_ref_seconds", None),
