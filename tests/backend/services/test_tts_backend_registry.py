@@ -199,6 +199,9 @@ def test_list_backends_shape(registry_sandbox):
         # Graded-emotion capability (#1208): bool from the class attr; drives
         # the Audiobook expressive panel's emotion gate.
         "supports_emotion",
+        # S1: explicit Singing Mode eligibility; every current speech engine
+        # defaults to an empty list until a singing adapter opts in.
+        "singing_capabilities",
         # Reference-length truth (#2281): seconds of a clone clip the engine
         # uses and how it picks them; None when not verified in-repo.
         "max_ref_seconds", "ref_strategy",
@@ -422,3 +425,48 @@ def test_supports_cloning_true_false_and_model_dependent(registry_sandbox):
     # descriptor object itself is always truthy, so passing it through would
     # be a false "clones" claim (same guard as cloning_capable_engine_ids).
     assert out["mlx-audio"]["supports_cloning"] is None
+
+
+# ── Singing Mode S1 capability schema + catalogue filtering ────────────────
+
+
+def test_existing_speech_engines_do_not_implicitly_support_singing(registry_sandbox):
+    rows = list_backends()
+    assert rows
+    assert all(row["singing_capabilities"] == [] for row in rows)
+
+
+def test_singing_capabilities_are_explicit_and_filterable(registry_sandbox):
+    class SingingConversionBackend(HealthyInProcessBackend):
+        id = "singing-conversion-test"
+        display_name = "Singing conversion test"
+        singing_capabilities = frozenset({
+            "singing_conversion", "pitch_conditioning", "speaker_clone"
+        })
+
+    registry_sandbox[SingingConversionBackend.id] = SingingConversionBackend
+    by_id = {row["id"]: row for row in list_backends()}
+    assert by_id[SingingConversionBackend.id]["singing_capabilities"] == [
+        "pitch_conditioning", "singing_conversion", "speaker_clone"
+    ]
+
+    filtered = list_backends(singing_capability="singing_conversion")
+    assert [row["id"] for row in filtered] == [SingingConversionBackend.id]
+
+
+def test_unknown_singing_filter_is_rejected(registry_sandbox):
+    with pytest.raises(ValueError, match="unknown singing capability"):
+        list_backends(singing_capability="speech_clone_is_not_singing")
+
+
+def test_invalid_engine_singing_metadata_fails_closed(registry_sandbox, caplog):
+    class InvalidSingingBackend(HealthyInProcessBackend):
+        id = "invalid-singing-test"
+        display_name = "Invalid singing test"
+        singing_capabilities = frozenset({"singing_conversion", "made_up_capability"})
+
+    registry_sandbox[InvalidSingingBackend.id] = InvalidSingingBackend
+    row = next(item for item in list_backends() if item["id"] == InvalidSingingBackend.id)
+    assert row["singing_capabilities"] == []
+    assert list_backends(singing_capability="singing_conversion") == []
+    assert "unknown singing capabilities" in caplog.text
