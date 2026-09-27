@@ -1,1 +1,65 @@
-from pathlib import Path\n\nimport pytest\nimport torch\n\nfrom services.singing_backend import (\n    DeterministicSingingBackend,\n    SingingBackend,\n    SingingCapabilities,\n    SingingConversionRequest,\n    SingingSynthesisRequest,\n)\n\nclass SpeechOnlySingingBackend(SingingBackend):\n    @classmethod\n    def is_available(cls):\n        return True, "test"\n\ndef _file(tmp_path: Path, name: str) -> Path:\n    path = tmp_path / name\n    path.write_bytes(b"fixture")\n    return path\n\ndef test_capabilities_fail_closed():\n    caps = SingingCapabilities()\n    assert caps.conversion is False\n    assert caps.synthesis is False\n    assert caps.pitch_conditioning is False\n    assert caps.midi_input is False\n    assert caps.musicxml_input is False\n\ndef test_unsupported_operations_never_fall_back_to_tts(tmp_path):\n    backend = SpeechOnlySingingBackend()\n    request = SingingConversionRequest(_file(tmp_path, "guide.wav"), _file(tmp_path, "voice.wav"))\n    with pytest.raises(NotImplementedError, match="does not support singing conversion"):\n        backend.convert(request)\n\ndef test_conversion_validates_inputs_before_engine_execution(tmp_path):\n    backend = DeterministicSingingBackend(torch.zeros(1, 240))\n    request = SingingConversionRequest(tmp_path / "missing.wav", _file(tmp_path, "voice.wav"))\n    with pytest.raises(ValueError, match="guide_vocal"):\n        backend.convert(request)\n\ndef test_deterministic_conversion_preserves_shape_timing_and_metadata(tmp_path):\n    guide = torch.linspace(-0.5, 0.5, 480).unsqueeze(0)\n    backend = DeterministicSingingBackend(guide, sample_rate=24000)\n    request = SingingConversionRequest(_file(tmp_path, "guide.wav"), _file(tmp_path, "voice.wav"))\n    render = backend.convert(request)\n    assert render.operation == "conversion"\n    assert render.engine_id == "deterministic-singing-test"\n    assert render.sample_rate == 24000\n    assert render.audio.shape == guide.shape\n    assert torch.equal(render.audio, guide)\n    assert render.audio.data_ptr() != guide.data_ptr()\n\ndef test_conversion_harness_cannot_claim_synthesis(tmp_path):\n    backend = DeterministicSingingBackend(torch.zeros(1, 10))\n    request = SingingSynthesisRequest(\n        lyrics="la",\n        melody=_file(tmp_path, "melody.mid"),\n        melody_format="midi",\n        target_voice=_file(tmp_path, "voice.wav"),\n    )\n    with pytest.raises(NotImplementedError, match="does not support singing synthesis"):\n        backend.synthesize(request)\n
+from pathlib import Path
+
+import pytest
+import torch
+
+from services.singing_backend import (
+    DeterministicSingingBackend,
+    SingingBackend,
+    SingingCapabilities,
+    SingingConversionRequest,
+    SingingSynthesisRequest,
+)
+
+class SpeechOnlySingingBackend(SingingBackend):
+    @classmethod
+    def is_available(cls):
+        return True, "test"
+
+def _file(tmp_path: Path, name: str) -> Path:
+    path = tmp_path / name
+    path.write_bytes(b"fixture")
+    return path
+
+def test_capabilities_fail_closed():
+    caps = SingingCapabilities()
+    assert caps.conversion is False
+    assert caps.synthesis is False
+    assert caps.pitch_conditioning is False
+    assert caps.midi_input is False
+    assert caps.musicxml_input is False
+
+def test_unsupported_operations_never_fall_back_to_tts(tmp_path):
+    backend = SpeechOnlySingingBackend()
+    request = SingingConversionRequest(_file(tmp_path, "guide.wav"), _file(tmp_path, "voice.wav"))
+    with pytest.raises(NotImplementedError, match="does not support singing conversion"):
+        backend.convert(request)
+
+def test_conversion_validates_inputs_before_engine_execution(tmp_path):
+    backend = DeterministicSingingBackend(torch.zeros(1, 240))
+    request = SingingConversionRequest(tmp_path / "missing.wav", _file(tmp_path, "voice.wav"))
+    with pytest.raises(ValueError, match="guide_vocal"):
+        backend.convert(request)
+
+def test_deterministic_conversion_preserves_shape_timing_and_metadata(tmp_path):
+    guide = torch.linspace(-0.5, 0.5, 480).unsqueeze(0)
+    backend = DeterministicSingingBackend(guide, sample_rate=24000)
+    request = SingingConversionRequest(_file(tmp_path, "guide.wav"), _file(tmp_path, "voice.wav"))
+    render = backend.convert(request)
+    assert render.operation == "conversion"
+    assert render.engine_id == "deterministic-singing-test"
+    assert render.sample_rate == 24000
+    assert render.audio.shape == guide.shape
+    assert torch.equal(render.audio, guide)
+    assert render.audio.data_ptr() != guide.data_ptr()
+
+def test_conversion_harness_cannot_claim_synthesis(tmp_path):
+    backend = DeterministicSingingBackend(torch.zeros(1, 10))
+    request = SingingSynthesisRequest(
+        lyrics="la",
+        melody=_file(tmp_path, "melody.mid"),
+        melody_format="midi",
+        target_voice=_file(tmp_path, "voice.wav"),
+    )
+    with pytest.raises(NotImplementedError, match="does not support singing synthesis"):
+        backend.synthesize(request)
