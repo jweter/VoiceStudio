@@ -69,6 +69,7 @@ Future lyrics + MIDI/MusicXML synthesis remains separate:
 lyrics + melody/notes
   -> tool-independent note/phoneme timeline
   -> singing-synthesis engine
+  -> mark_synthetic (mandatory synthetic-audio provenance chokepoint)
   -> deterministic timing/pitch/provenance checks
   -> preview/export
 ```
@@ -83,6 +84,12 @@ Singing synthesis must not force its model-private event representation into the
 4. Local-first operation remains the default.
 5. Source/reference voice material and derived artifacts remain distinct.
 6. Model/engine/version and source/output hashes are provenance requirements for completed renders.
+
+## Synthetic-audio marking boundary
+
+Every generated Singing Mode audio artifact — conversion or synthesis — must pass through the repository's existing `mark_synthetic` chokepoint before it can be exposed through preview, history, export, API/MCP delivery, or batch completion.
+
+Deterministic singing provenance (source hashes, engine/model/version, target voice identity, F0/timing evidence) supplements that mandatory synthetic-audio marking; it does not replace it. No adapter may write a user-consumable singing render directly around `mark_synthetic`.
 
 ## Verification boundary
 
