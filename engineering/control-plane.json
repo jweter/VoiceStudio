@@ -51,9 +51,29 @@
       {
         "id": "repository_contract",
         "steps": [
-          ["uv", "run", "--no-sync", "pytest", "tests/", "-q", "--tb=short"],
-          ["uv", "run", "--no-sync", "pytest", "backend/tests/", "-q", "--tb=short"],
-          ["bun", "run", "check:electron"]
+          [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "tests/",
+            "-q",
+            "--tb=short"
+          ],
+          [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "backend/tests/",
+            "-q",
+            "--tb=short"
+          ],
+          [
+            "bun",
+            "run",
+            "check:electron"
+          ]
         ],
         "evidence": "mirrors the maintained required CI backend/frontend gate without browser Product Reality"
       }
@@ -86,7 +106,9 @@
   "portfolio_aggregation": {
     "project_key": "voicestudio",
     "component_role": "standalone",
-    "required_components": ["standalone"],
+    "required_components": [
+      "standalone"
+    ],
     "authority": "hourly portfolio orchestrator",
     "rule": "aggregate only verified repository evidence; never infer missing state"
   },
@@ -105,25 +127,69 @@
     "checks": [
       {
         "id": "control_plane",
-        "argv": ["python", "engineering/preflight.py", "--self-check"],
+        "argv": [
+          "python",
+          "engineering/preflight.py",
+          "--self-check"
+        ],
         "kind": "governance",
         "fast": true
       },
       {
+        "id": "python_environment",
+        "argv": [
+          "uv",
+          "sync",
+          "--all-extras"
+        ],
+        "kind": "environment",
+        "fast": false
+      },
+      {
+        "id": "electron_environment",
+        "argv": [
+          "bun",
+          "install",
+          "--frozen-lockfile"
+        ],
+        "kind": "environment",
+        "fast": false
+      },
+      {
         "id": "backend_tests",
-        "argv": ["uv", "run", "--no-sync", "pytest", "tests/", "-q", "--tb=short"],
+        "argv": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "tests/",
+          "-q",
+          "--tb=short"
+        ],
         "kind": "test",
         "fast": false
       },
       {
         "id": "backend_isolated_tests",
-        "argv": ["uv", "run", "--no-sync", "pytest", "backend/tests/", "-q", "--tb=short"],
+        "argv": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "backend/tests/",
+          "-q",
+          "--tb=short"
+        ],
         "kind": "test",
         "fast": false
       },
       {
         "id": "electron_contract",
-        "argv": ["bun", "run", "check:electron"],
+        "argv": [
+          "bun",
+          "run",
+          "check:electron"
+        ],
         "kind": "test",
         "fast": false
       }
