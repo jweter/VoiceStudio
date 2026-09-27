@@ -58,7 +58,7 @@ def _catalogue_active_id(family: str, module) -> str:
         return active
 
 
-def _family_payload(family: str, module):
+def _family_payload(family: str, module, *, singing_capability: str | None = None):
     """Public inventory plus whether an environment pin owns this family."""
     active = _catalogue_active_id(family, module)
     model = None
@@ -79,7 +79,11 @@ def _family_payload(family: str, module):
             instance = getattr(tts_backend, "_active_instance", None)
             if instance is not None and getattr(tts_backend, "_active_instance_id", None) == active:
                 model = instance.model_identity()
-    backends = public_backends(module.list_backends())
+    if family == "tts":
+        rows = module.list_backends(singing_capability=singing_capability)
+    else:
+        rows = module.list_backends()
+    backends = public_backends(rows)
     if family == "tts":
         from services import settings_store
 
@@ -142,8 +146,14 @@ def list_all_engines(request: Request):
 
 
 @router.get("/engines/tts")
-def list_tts_backends(request: Request):
-    return _request_install_capability(_family_payload("tts", tts_backend), request)
+def list_tts_backends(request: Request, singing_capability: str | None = None):
+    try:
+        payload = _family_payload(
+            "tts", tts_backend, singing_capability=singing_capability
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return _request_install_capability(payload, request)
 
 
 @router.get(
