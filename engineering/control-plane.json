@@ -1,0 +1,198 @@
+{
+  "schema_version": 4,
+  "portfolio_project": "VoiceStudio Singing",
+  "repository": "jweter/VoiceStudio",
+  "repository_role": "standalone",
+  "source_of_truth": "GitHub repository state plus authoritative documents listed below",
+  "authoritative_documents": [
+    "docs/projects/singing-mode.md",
+    "docs/ROADMAP.md",
+    "docs/ARCHITECTURE.md",
+    "AGENTS.md",
+    "CLAUDE.md"
+  ],
+  "definition_of_done": {
+    "implementation_complete": true,
+    "tests_required_for_change_scope": true,
+    "current_required_ci_green": true,
+    "mergeability_resolved": true,
+    "blocking_reviews_and_comments_resolved": true,
+    "architecture_security_licensing_provenance_privacy_clear": true,
+    "documentation_updated_when_project_reality_changes": true,
+    "regression_protection_for_reproduced_bugs": "when practical",
+    "product_reality": "subjective singing identity, intelligibility, musical transitions, vibrato, and sustained-vowel quality remain explicit human Product Reality after deterministic gates"
+  },
+  "invariants": [
+    "electron_is_the_only_maintained_desktop_ui",
+    "singing_is_a_distinct_engine_capability_not_speech_fallback",
+    "singing_mvp_preserves_explicit_pitch_and_timing",
+    "local_first_default",
+    "voice_consent_and_model_license_boundaries_preserved",
+    "source_and_generation_provenance_preserved",
+    "subjective_singing_quality_not_inferred_from_automated_tests"
+  ],
+  "verification": {
+    "automated_lanes": [
+      "backend_tests",
+      "backend_isolated_tests",
+      "electron_typecheck_tests_build",
+      "singing_deterministic_audio_metrics",
+      "provenance_and_resume_contracts"
+    ],
+    "product_reality_lanes": [
+      "target_voice_resemblance",
+      "lyric_intelligibility",
+      "musical_transitions",
+      "vibrato_naturalness",
+      "sustained_vowel_stability"
+    ],
+    "rule": "never convert missing human listening evidence into PASS; deterministic pitch/timing/provenance evidence remains separate from Product Reality",
+    "executable_lanes": [
+      {
+        "id": "repository_contract",
+        "steps": [
+          [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "tests/",
+            "-q",
+            "--tb=short"
+          ],
+          [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "backend/tests/",
+            "-q",
+            "--tb=short"
+          ],
+          [
+            "bun",
+            "run",
+            "check:electron"
+          ]
+        ],
+        "evidence": "mirrors the maintained required CI backend/frontend gate without browser Product Reality"
+      }
+    ]
+  },
+  "work_ownership": {
+    "authority": "GitHub",
+    "active_work_sources": [
+      "open pull requests",
+      "open issues with active implementation evidence",
+      "recent focused branches/commits when attributable"
+    ],
+    "rule": "do not duplicate or compete with active work; prefer finishing existing work"
+  },
+  "readiness_scoring": {
+    "mode": "evidence-derived",
+    "prohibit_guessed_percent_complete": true,
+    "dimensions": [
+      "implementation",
+      "automated_verification",
+      "integration",
+      "product_reality",
+      "documentation",
+      "security_and_policy"
+    ],
+    "rule": "report unknown when evidence is insufficient"
+  },
+  "continuation": "advance the first unchecked S0-S8 milestone in docs/projects/singing-mode.md unless higher-priority live repository evidence overrides it",
+  "cross_repo_authorities": [],
+  "portfolio_aggregation": {
+    "project_key": "voicestudio",
+    "component_role": "standalone",
+    "required_components": [
+      "standalone"
+    ],
+    "authority": "hourly portfolio orchestrator",
+    "rule": "aggregate only verified repository evidence; never infer missing state"
+  },
+  "golden_scenarios": [
+    {
+      "id": "singing-conversion-v1",
+      "component": "standalone",
+      "lane": "singing_conversion_deterministic",
+      "rule": "automated scenario may verify pitch/timing/provenance; subjective singing quality remains separate Product Reality"
+    }
+  ],
+  "preflight": {
+    "required_before_pr": true,
+    "evidence_file": "preflight-evidence.json",
+    "format_apply": null,
+    "checks": [
+      {
+        "id": "control_plane",
+        "argv": [
+          "python",
+          "engineering/preflight.py",
+          "--self-check"
+        ],
+        "kind": "governance",
+        "fast": true
+      },
+      {
+        "id": "python_environment",
+        "argv": [
+          "uv",
+          "sync",
+          "--all-extras"
+        ],
+        "kind": "environment",
+        "fast": false
+      },
+      {
+        "id": "electron_environment",
+        "argv": [
+          "bun",
+          "install",
+          "--frozen-lockfile"
+        ],
+        "kind": "environment",
+        "fast": false
+      },
+      {
+        "id": "backend_tests",
+        "argv": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "tests/",
+          "-q",
+          "--tb=short"
+        ],
+        "kind": "test",
+        "fast": false
+      },
+      {
+        "id": "backend_isolated_tests",
+        "argv": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "backend/tests/",
+          "-q",
+          "--tb=short"
+        ],
+        "kind": "test",
+        "fast": false
+      },
+      {
+        "id": "electron_contract",
+        "argv": [
+          "bun",
+          "run",
+          "check:electron"
+        ],
+        "kind": "test",
+        "fast": false
+      }
+    ]
+  }
+}
