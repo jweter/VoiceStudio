@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -14,6 +15,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CONTROL = ROOT / "engineering" / "control-plane.json"
 EVIDENCE = ROOT / "preflight-evidence.json"
+CANONICAL_REPOSITORY = "debpalash/VoiceStudio"
+DEVELOPMENT_REPOSITORY = "jweter/VoiceStudio"
 
 
 def load_control() -> dict:
@@ -21,13 +24,16 @@ def load_control() -> dict:
     required = {
         "schema_version",
         "repository",
+        "development_repository",
         "authoritative_documents",
         "preflight",
     }
     if payload.get("schema_version") != 4 or not required <= payload.keys():
         raise ValueError("invalid control-plane contract")
-    if payload.get("repository") != "jweter/VoiceStudio":
-        raise ValueError("unexpected repository identity")
+    if payload.get("repository") != CANONICAL_REPOSITORY:
+        raise ValueError("unexpected canonical repository identity")
+    if payload.get("development_repository") != DEVELOPMENT_REPOSITORY:
+        raise ValueError("unexpected development repository identity")
     docs = payload.get("authoritative_documents")
     if not isinstance(docs, list) or not docs:
         raise ValueError("authoritative_documents must be a non-empty list")
@@ -51,6 +57,19 @@ def git_head() -> str:
     return result.stdout.strip() if result.returncode == 0 else "UNKNOWN"
 
 
+def worktree_status() -> str:
+    result = subprocess.run(
+        ["git", "status", "--porcelain=v1", "--untracked-files=all"],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return "GIT_STATUS_UNAVAILABLE"
+    return result.stdout.strip()
+
+
 def run_check(check: dict) -> dict:
     argv = check.get("argv")
     if not isinstance(argv, list) or not argv or any(
@@ -67,17 +86,24 @@ def run_check(check: dict) -> dict:
             "stdout": "",
             "stderr": f"required executable not found: {executable}",
         }
-    env = os.environ.copy()
-    env.setdefault("HF_HUB_OFFLINE", "1")
-    started = time.monotonic()
-    result = subprocess.run(
-        argv,
-        cwd=ROOT,
-        text=True,
-        capture_output=True,
-        check=False,
-        env=env,
-    )
+
+    # Required tests run hermetically with respect to Hugging Face. Do not
+    # inherit a developer's online mode or warm model cache.
+    with tempfile.TemporaryDirectory(prefix="voicestudio-preflight-hf-") as temp_root:
+        env = os.environ.copy()
+        env["HF_HUB_OFFLINE"] = "1"
+        env["HF_HUB_CACHE"] = str(Path(temp_root) / "hub")
+        env["HF_HOME"] = str(Path(temp_root) / "home")
+        env["TRANSFORMERS_CACHE"] = str(Path(temp_root) / "transformers")
+        started = time.monotonic()
+        result = subprocess.run(
+            argv,
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+            env=env,
+        )
     return {
         "id": check.get("id"),
         "argv": argv,
@@ -88,12 +114,24 @@ def run_check(check: dict) -> dict:
     }
 
 
+def fence_result(kind: str, expected: str, observed: str) -> dict:
+    return {
+        "id": kind,
+        "argv": [],
+        "returncode": 125,
+        "duration_seconds": 0.0,
+        "stdout": "",
+        "stderr": f"{kind.upper()} expected={expected!r} observed={observed!r}",
+    }
+
+
 def write_evidence(status: str, head: str, results: list[dict]) -> None:
     EVIDENCE.write_text(
         json.dumps(
             {
-                "schema_version": 1,
-                "repository": "jweter/VoiceStudio",
+                "schema_version": 2,
+                "repository": CANONICAL_REPOSITORY,
+                "development_repository": DEVELOPMENT_REPOSITORY,
                 "head_sha": head,
                 "status": status,
                 "recorded_at_utc": datetime.now(UTC).isoformat(),
@@ -123,8 +161,14 @@ def main() -> int:
         return 0
 
     expected_head = git_head()
+    expected_tree = worktree_status()
     if expected_head == "UNKNOWN":
         print("PREFLIGHT: FAIL: git head unavailable", file=sys.stderr)
+        return 1
+    if expected_tree:
+        results = [fence_result("worktree_fence", "", expected_tree)]
+        write_evidence("FAILED", expected_head, results)
+        print("PREFLIGHT: FAIL: worktree must be clean", file=sys.stderr)
         return 1
 
     results: list[dict] = []
@@ -144,20 +188,16 @@ def main() -> int:
 
         observed_head = git_head()
         if observed_head != expected_head:
-            results.append(
-                {
-                    "id": "exact_head_fence",
-                    "argv": [],
-                    "returncode": 125,
-                    "duration_seconds": 0.0,
-                    "stdout": "",
-                    "stderr": (
-                        f"HEAD_MOVED expected={expected_head} observed={observed_head}"
-                    ),
-                }
-            )
+            results.append(fence_result("exact_head_fence", expected_head, observed_head))
             write_evidence("FAILED", expected_head, results)
             print("PREFLIGHT: FAIL: exact-head fence", file=sys.stderr)
+            return 1
+
+        observed_tree = worktree_status()
+        if observed_tree:
+            results.append(fence_result("worktree_fence", "", observed_tree))
+            write_evidence("FAILED", expected_head, results)
+            print("PREFLIGHT: FAIL: worktree changed during verification", file=sys.stderr)
             return 1
 
         if result["returncode"] != 0:
