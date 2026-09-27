@@ -317,10 +317,10 @@ Only after deterministic checks pass:
 - Surface commercial-use restrictions for the selected model before export when known.
 - Do not bundle model weights whose licenses prohibit redistribution.
 
-## Initial implementation milestones
+## Implementation status\n\nS0/S1 establish a fail-closed singing boundary in `backend/services/singing_backend.py` and explicit catalogue capability metadata. The deterministic backend is a plumbing/test harness only; it does **not** claim audible voice conversion quality or satisfy Product Reality. Real SVC remains S4 after the project/input and pitch-analysis foundations.\n\n## Initial implementation milestones
 
-- [ ] S0 — Architecture decision: singing as separate engine capability.
-- [ ] S1 — Singing engine capability schema + catalogue filtering.
+- [x] S0 — Architecture decision: singing as separate engine capability.
+- [x] S1 — Singing engine capability schema + catalogue filtering.
 - [ ] S2 — Singing project/input data model.
 - [ ] S3 — F0/pitch-analysis service with golden fixtures.
 - [ ] S4 — First local singing voice-conversion adapter.
