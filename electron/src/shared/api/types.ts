@@ -11,6 +11,19 @@
 
 // ── Engines (Phase 3 / 4.6 / Plan 02-04) ─────────────────────────────────
 export type EngineFamily = 'tts' | 'asr' | 'llm';
+export type SingingCapability =
+  | 'singing_conversion'
+  | 'singing_synthesis'
+  | 'pitch_conditioning'
+  | 'phoneme_timing'
+  | 'lyrics_alignment'
+  | 'speaker_clone'
+  | 'speaker_embedding'
+  | 'emotion_control'
+  | 'vibrato_control'
+  | 'breath_control'
+  | 'midi_input'
+  | 'musicxml_input';
 
 // `isolation_mode`, `last_error`, `install_hint`, `gpu_compat` arrived in Plan
 // 02-04 alongside the Engine Compatibility Matrix. As of #21 ALL three
@@ -41,6 +54,9 @@ export interface EngineBackend {
   // emotion controls only when the active engine sets this. Absent on legacy
   // payloads (treated as false).
   supports_emotion?: boolean;
+  // Singing Mode capabilities are explicit opt-ins. Empty/absent means this
+  // engine is not eligible for singing workflows, even if it can clone speech.
+  singing_capabilities?: SingingCapability[];
   install_hint?: string | null;
   // Copy-paste-ready `export VAR=...` line for a path-gated opt-in engine
   // (IndexTTS / MOSS-v1.5 / dots.tts / Confucius4), else null/absent.
