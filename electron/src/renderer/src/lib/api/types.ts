@@ -51,6 +51,19 @@ export interface HistoryItem {
 }
 
 // ── Engines (`GET /engines`) ───────────────────────────────────────────────
+export type SingingCapability =
+  | 'singing_conversion'
+  | 'singing_synthesis'
+  | 'pitch_conditioning'
+  | 'phoneme_timing'
+  | 'lyrics_alignment'
+  | 'speaker_clone'
+  | 'speaker_embedding'
+  | 'emotion_control'
+  | 'vibrato_control'
+  | 'breath_control'
+  | 'midi_input'
+  | 'musicxml_input';
 export interface EngineBackend {
   /** Lowercase picker names; null/absent means model-specific or unrestricted. */
   supported_language_names?: string[] | null;
@@ -66,6 +79,8 @@ export interface EngineBackend {
   reason: string | null;
   hint?: string | null;
   supports_cloning?: boolean | null;
+  /** Explicit Singing Mode eligibility; empty/absent never falls back to speech. */
+  singing_capabilities?: SingingCapability[];
   /** Seconds of a clone reference the engine uses; null when not verified (#2281). */
   max_ref_seconds?: number | null;
   /** How that stretch is chosen from a longer clip. */
