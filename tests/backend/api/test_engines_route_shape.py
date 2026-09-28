@@ -1131,3 +1131,26 @@ def test_no_hf_token_leak_in_health_response(fresh_app, monkeypatch):
     assert body["ok"] is False
     assert not HF_TOKEN_RE.search(body["message"])
     assert body["message"] == "Engine unavailable; check the backend log for details."
+
+
+# ── Singing Mode S1 catalogue contract ────────────────────────────────────
+
+
+def test_tts_catalogue_exposes_explicit_singing_capabilities(fresh_app):
+    body = _client(fresh_app).get("/engines/tts").json()
+    assert body["backends"]
+    assert all("singing_capabilities" in row for row in body["backends"])
+    # S1 defines the schema only; no current speech engine may become singing-
+    # eligible merely because it supports ordinary voice cloning.
+    assert all(row["singing_capabilities"] == [] for row in body["backends"])
+
+
+def test_tts_catalogue_can_filter_singing_capability_fail_closed(fresh_app):
+    client = _client(fresh_app)
+    response = client.get("/engines/tts?singing_capability=singing_conversion")
+    assert response.status_code == 200
+    assert response.json()["backends"] == []
+
+    invalid = client.get("/engines/tts?singing_capability=not_a_capability")
+    assert invalid.status_code == 422
+    assert "unknown singing capability" in invalid.json()["detail"]
