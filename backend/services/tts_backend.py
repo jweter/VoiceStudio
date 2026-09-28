@@ -34,6 +34,49 @@ import torch
 logger = logging.getLogger("omnivoice.tts")
 
 
+# Singing Mode capability vocabulary (S1). These describe capabilities in the
+# singing domain only; ordinary speech cloning does not imply singing support.
+SINGING_CAPABILITY_NAMES = frozenset({
+    "singing_conversion",
+    "singing_synthesis",
+    "pitch_conditioning",
+    "phoneme_timing",
+    "lyrics_alignment",
+    "speaker_clone",
+    "speaker_embedding",
+    "emotion_control",
+    "vibrato_control",
+    "breath_control",
+    "midi_input",
+    "musicxml_input",
+})
+
+
+def _singing_capabilities_for(cls: type) -> list[str]:
+    """Return a validated, deterministic singing-capability list.
+
+    Invalid metadata fails closed: the engine advertises no singing support
+    instead of becoming eligible by accident.
+    """
+    raw = getattr(cls, "singing_capabilities", frozenset())
+    if isinstance(raw, str):
+        logger.warning("%s declares singing_capabilities as a string; ignoring", getattr(cls, "id", cls))
+        return []
+    try:
+        declared = frozenset(raw)
+    except TypeError:
+        logger.warning("%s declares invalid singing_capabilities; ignoring", getattr(cls, "id", cls))
+        return []
+    unknown = declared - SINGING_CAPABILITY_NAMES
+    if unknown:
+        logger.warning(
+            "%s declares unknown singing capabilities %s; ignoring all singing metadata",
+            getattr(cls, "id", cls), sorted(unknown),
+        )
+        return []
+    return sorted(declared)
+
+
 # ── HF token leak mitigation (Plan 02-04, T-02-12) ─────────────────────────
 #
 # Token shape is ``hf_`` + 30+ alphanumeric chars per Hugging Face's own
@@ -242,6 +285,11 @@ class TTSBackend(ABC):
     #: that don't set it still ignore the kwargs (every generate() takes **kw),
     #: so this is a discoverability hint, not an enforcement gate.
     supports_emotion: bool = False
+
+    #: Singing Mode capabilities. Empty by default: speech synthesis, voice
+    #: cloning, or emotion support never imply singing compatibility.
+    #: Singing adapters must opt in explicitly using SINGING_CAPABILITY_NAMES.
+    singing_capabilities: frozenset[str] = frozenset()
 
     def ensure_ready(self) -> None:
         """Load model weights now (blocking), so callers can separate the
@@ -3268,7 +3316,7 @@ def _sidecar_installable_ids() -> frozenset[str]:
         return frozenset()
 
 
-def list_backends(*, include_hidden: bool = False) -> list[dict]:
+def list_backends(*, include_hidden: bool = False, singing_capability: str | None = None) -> list[dict]:
     """Enumerate the engine catalogue with each backend's availability state.
 
     On MPS, the canonical ``omnivoice`` id already resolves to the killable
@@ -3297,6 +3345,7 @@ def list_backends(*, include_hidden: bool = False) -> list[dict]:
           "gpu_compat":     list[str],              # subset of {cuda, rocm, mps, vulkan, xpu, npu, cpu}
           "supports_cloning": Optional[bool],       # True/False from the class attr; None when
                                                     #   model-dependent (property, e.g. mlx-audio)
+          "singing_capabilities": list[str],        # explicit Singing Mode capabilities; [] by default
           "max_ref_seconds": Optional[float],       # seconds of a clone clip the engine uses
           "ref_strategy": Optional[str],            # "best_window" | "head" | "full"; None = unverified
           "effective_device": str,                  # device this engine uses on THIS host
@@ -3314,6 +3363,9 @@ def list_backends(*, include_hidden: bool = False) -> list[dict]:
     serialized — :func:`_mask_hf_tokens`. The frontend can render these
     fields verbatim without leaking credentials.
     """
+    if singing_capability is not None and singing_capability not in SINGING_CAPABILITY_NAMES:
+        raise ValueError(f"unknown singing capability: {singing_capability}")
+
     # Detect subprocess-isolated backends via a duck-typed marker rather
     # than `issubclass(cls, SubprocessBackend)`. Test fixtures (e.g. the
     # token_resolver suite) purge `sys.modules["services"]` between tests
@@ -3420,6 +3472,9 @@ def list_backends(*, include_hidden: bool = False) -> list[dict]:
             # Graded-emotion capability (#1208) — drives the Audiobook emotion
             # panel's engine gate. Class attr, defaults False.
             "supports_emotion": bool(getattr(cls, "supports_emotion", False)),
+            # Singing Mode S1: explicit opt-in only. Existing speech engines
+            # remain ineligible until a singing adapter declares capabilities.
+            "singing_capabilities": _singing_capabilities_for(cls),
             # Reference-length truth (#2281): how much of a clone clip the
             # engine really uses and how it picks it. None = not verified.
             "max_ref_seconds": getattr(cls, "max_ref_seconds", None),
@@ -3468,6 +3523,12 @@ def list_backends(*, include_hidden: bool = False) -> list[dict]:
                 for key, repo_id in cls.CURATED_MODELS.items()
             ]
             out[-1]["active_model_id"] = active_model
+    if singing_capability is not None:
+        out = [
+            entry for entry in out
+            if singing_capability in entry["singing_capabilities"]
+        ]
+
     return out
 
 
