@@ -1,6 +1,6 @@
 # VoiceStudio — Road to World-Class
 
-**Last updated:** 2026-04-21 · **Current phase:** Phases 0–4 complete. Remaining work sits in Design / Performance / Quality tracks + the Phase 4 eval sprint. · **Resourcing:** 1 FTE + ad-hoc
+**Last updated:** 2026-09-29 · **Current phase:** Phases 0–4 complete. Singing/performance-style presets are now a planned creative expansion alongside the Design / Performance / Quality tracks. · **Resourcing:** 1 FTE + ad-hoc
 
 Honest plan for moving from "polished solo-dev project" to software that holds up under scrutiny at scale. Living tracker: every item has a status, every phase has a progress bar, every shipped item has a date.
 
@@ -18,7 +18,7 @@ Phase 5 · Productisation          ░░░░░░░░░░  0 / 5     �
 
 Design track        ▓▓▓▓▓▓▓▓▓░  ongoing · 14 primitives + ~67 migrated inline styles · DubTab/Header/Sidebar/CloneDesignTab drained
 Performance track   ▓▓▓░░░░░░░  underway · profiling, preload, isolated engines + cache-remix I/O
-Feature-magic track ▓▓░░░░░░░░  underway · project-level casting board shipped
+Feature-magic track ▓▓░░░░░░░░  underway · project-level casting board shipped · singing-style presets planned
 Quality track       ▓▓░░░░░░░░  12 smoke tests, 10 error messages rewritten
 ```
 
@@ -160,6 +160,68 @@ Progress: **6/6 ✅** (both bets wired end-to-end; review banners + step-level r
 
 ---
 
+## 🎤 Phase 4.7 — Singing + performance-style presets _(planned)_
+
+> *Clone your own voice once, then perform through selectable singing / rap / spoken-performance styles while preserving your vocal identity.*
+
+This is the next major creative expansion for VoiceStudio: **speaker identity and performance style become separate controls**. A user's cloned voice remains the identity anchor; a style preset changes delivery characteristics such as phrasing, attack, vibrato, grit, breathiness, register behavior, rhythmic placement, articulation, dynamics, and pitch gestures.
+
+**Core product rule:** style transfer must not simply swap the user's timbre for a famous performer's voice. The target is **"my voice, performing with these characteristics."**
+
+Progress: **0/6 (planned)**
+
+| ID | Item | Status | Notes |
+|----|------|:---:|------|
+| 4.7.1 | Identity/style disentanglement | ⏳ | Separate speaker embedding / cloned-voice identity from a reusable performance-style representation. Define measurable identity-retention thresholds before shipping presets. |
+| 4.7.2 | Singing/rap performance control layer | ⏳ | Add controls for pitch contour, note transitions, vibrato rate/depth, onset/attack, breathiness, grit/distortion, register, vowel shaping, consonant attack, rhythmic placement, phrasing, dynamics, and ad-lib tendency. |
+| 4.7.3 | Preset engine + style-strength mixer | ⏳ | Presets become parameterized style profiles rather than hard-coded celebrity voices. Add 0–100 style strength, per-dimension overrides, A/B preview, and eventually blending of two compatible styles. |
+| 4.7.4 | Initial preset library | ⏳ | Build the first library from the user's reference targets below, surfaced in-product with descriptive preset names. Preserve inspiration metadata internally for R&D/evaluation. |
+| 4.7.5 | Singing-specific evaluation harness | ⏳ | Evaluate speaker similarity to the user's clone, pitch accuracy, timing, intelligibility, naturalness, style adherence, and artifact rate. Include clean-vs-distorted and sung-vs-rap fixtures. |
+| 4.7.6 | Studio UX + reusable custom styles | ⏳ | Voice Profile gets a Performance Style picker, preview phrase/song-line workflow, favorites, custom user presets, and saved style+voice combinations. |
+
+### Initial style targets
+
+These are **performance references**, not replacement voice identities. Product-facing labels should describe the acoustic/performance behavior rather than depend on an artist name.
+
+| Reference target | Working descriptive preset | Characteristics to capture |
+|---|---|---|
+| Ozzy Osbourne / Black Sabbath | **Haunted Doom Croon** | nasal-forward resonance, eerie sustained vowels, loose pitch scoops, dark legato phrasing |
+| Metallica | **Percussive Thrash Bark** | hard consonant attack, chest-heavy projection, clipped phrasing, aggressive rhythmic precision |
+| Tool | **Controlled Alt-Metal Intensity** | restrained-to-explosive dynamics, long controlled lines, dark resonance, deliberate phrasing |
+| Primus | **Elastic Funk-Metal Character** | exaggerated articulation, elastic pitch, quirky rhythmic placement, character-forward delivery |
+| Judas Priest | **Operatic Metal Screamer** | high-register power, clean metallic edge, dramatic sustain, controlled vibrato |
+| Iron Maiden | **Galloping Arena Tenor** | bright projection, heroic sustain, fast melodic phrasing, strong vibrato |
+| Type O Negative | **Deep Gothic Baritone** | very low register, dark resonance, slow legato, intimate-to-commanding dynamics |
+| Korn | **Nu-Metal Whisper-to-Break** | breathy intimacy, unstable breaks, sudden aggression, rhythmic vocal percussion / non-lexical textures |
+| Eminem | **Precision Rapid-Fire Rap** | dense syllabic timing, internal-rhyme articulation, sharp consonants, frequent cadence changes |
+| Snoop Dogg | **Laid-Back West-Coast Flow** | behind-the-beat placement, relaxed articulation, narrow melodic contour, smooth legato flow |
+| Rammstein | **Industrial Command Baritone** | low chest resonance, hard attacks, strict rhythmic placement, declamatory phrasing |
+| Christopher Walken | **Staccato Dramatic Spoken** | unusual pauses, stress shifts, clipped phrase groups, theatrical spoken cadence |
+| Freddie Mercury | **Theatrical Operatic Rock** | wide dynamic range, agile register shifts, controlled vibrato, dramatic vowel shaping |
+| Led Zeppelin | **Blues-Rock Wail** | high blues-inflected register, rasp, pitch bends, melisma, explosive sustained notes |
+
+More references can be added without changing the architecture: each should reduce to reusable performance dimensions rather than a one-off model.
+
+### Architecture direction
+
+1. **Voice identity encoder** — the user's consented clone / profile remains the speaker anchor.
+2. **Performance-style representation** — hand-authored parameters at first, later learned style embeddings from licensed/authorized reference audio.
+3. **Pitch + timing plan** — accept sung input, MIDI/MusicXML/pitch track, or generated melody contour; rap/spoken presets can operate without a melody track.
+4. **Conditioned renderer** — synthesize the user's voice under the selected performance controls.
+5. **Post-render vocal production** — optional saturation, doubling, formant-safe coloration, dynamics, delay/reverb, while keeping identity evaluation ahead of FX.
+6. **Evaluation gate** — reject preset/model changes that gain style adherence by materially degrading the user's speaker similarity.
+
+### Product / rights guardrails
+
+- Require explicit consent for every cloned voice used as an identity source.
+- Treat named performers above as **R&D inspiration references**; ship descriptive style presets unless rights/licensing supports branded naming.
+- Do not train a distributable preset from unlicensed isolated vocals. Prefer hand-authored controls, public-domain/appropriately licensed data, or user-supplied authorized references.
+- Preserve provenance for learned style assets and make style assets independently removable from voice profiles.
+
+See singing-style-presets.md for the detailed implementation and evaluation plan.
+
+---
+
 ## 🏗️ Phase 5 — Productisation _(demand-driven → 🚫 deferred)_
 
 > *Do not build proactively. Trigger-based only.*
@@ -214,6 +276,7 @@ None on the critical path to world-class. All are answers to real demand.
 | Context-aware pipeline (video frames → pipeline decisions) | ⏳ | After Phase 4 |
 | On-device learning from corrections (user edits → LoRA) | ⏳ | Research only; possibly Phase 5+ |
 | Real-time dub preview (stream TTS as you edit) | ✅ | Shipped 2026-09-02 (#1769) — opt-in "Live preview" toggle on the dub segment table streams the edited line over `/ws/tts` with its CAST voice; export path unchanged. |
+| Singing + performance-style presets | ⏳ | Phase 4.7 planned — preserve the user's cloned identity while applying reusable singing / rap / spoken-performance controls; see singing-style-presets.md. |
 
 ### 🧪 Quality track _(🟡 underway)_
 
