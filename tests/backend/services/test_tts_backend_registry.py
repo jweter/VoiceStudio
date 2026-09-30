@@ -470,3 +470,17 @@ def test_invalid_engine_singing_metadata_fails_closed(registry_sandbox, caplog):
     assert row["singing_capabilities"] == []
     assert list_backends(singing_capability="singing_conversion") == []
     assert "unknown singing capabilities" in caplog.text
+
+
+def test_string_singing_metadata_fails_closed(registry_sandbox, caplog):
+    """A bare string must never be treated as an iterable capability set."""
+    class StringSingingBackend(HealthyInProcessBackend):
+        id = "string-singing-test"
+        display_name = "String singing test"
+        singing_capabilities = "singing_conversion"
+
+    registry_sandbox[StringSingingBackend.id] = StringSingingBackend
+    row = next(item for item in list_backends() if item["id"] == StringSingingBackend.id)
+    assert row["singing_capabilities"] == []
+    assert list_backends(singing_capability="singing_conversion") == []
+    assert "singing capabilities must be a set-like collection" in caplog.text
