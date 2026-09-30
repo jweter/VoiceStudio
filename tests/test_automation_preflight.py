@@ -70,3 +70,22 @@ def test_run_check_forces_offline_empty_huggingface_cache(monkeypatch):
 def test_preflight_evidence_is_gitignored():
     ignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
     assert "/preflight-evidence.json" in ignore
+
+def test_run_check_bounds_each_command_and_reports_timeout(monkeypatch):
+    preflight = _preflight_module()
+    captured = {}
+
+    def fake_run(argv, **kwargs):
+        captured["timeout"] = kwargs["timeout"]
+        raise preflight.subprocess.TimeoutExpired(argv, kwargs["timeout"])
+
+    monkeypatch.setattr(preflight.shutil, "which", lambda _name: "python")
+    monkeypatch.setattr(preflight.subprocess, "run", fake_run)
+
+    result = preflight.run_check(
+        {"id": "bounded", "argv": ["python", "-V"], "timeout_seconds": 7}
+    )
+
+    assert captured["timeout"] == 7
+    assert result["returncode"] == 124
+    assert "timed out after 7s" in result["stderr"]
