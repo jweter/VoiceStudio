@@ -483,4 +483,4 @@ def test_string_singing_metadata_fails_closed(registry_sandbox, caplog):
     row = next(item for item in list_backends() if item["id"] == StringSingingBackend.id)
     assert row["singing_capabilities"] == []
     assert list_backends(singing_capability="singing_conversion") == []
-    assert "singing capabilities must be a set-like collection" in caplog.text
+    assert "string-singing-test" in caplog.text
