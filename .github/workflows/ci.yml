@@ -37,6 +37,7 @@ jobs:
   test:
     name: Tests (backend + frontend)
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     env:
       # Same restricted-network resilience the smoke matrix already sets. This
       # job resolves the same direct-URL dependency and had none of it, which
