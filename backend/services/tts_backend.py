@@ -67,6 +67,9 @@ def _singing_capabilities_for(cls: type) -> list[str]:
     except TypeError:
         logger.warning("%s declares invalid singing_capabilities; ignoring", getattr(cls, "id", cls))
         return []
+    if any(not isinstance(capability, str) for capability in declared):
+        logger.warning("%s declares non-string singing capabilities; ignoring", getattr(cls, "id", cls))
+        return []
     unknown = declared - SINGING_CAPABILITY_NAMES
     if unknown:
         logger.warning(
