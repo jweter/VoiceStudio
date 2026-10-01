@@ -96,14 +96,26 @@ def run_check(check: dict) -> dict:
         env["HF_HOME"] = str(Path(temp_root) / "home")
         env["TRANSFORMERS_CACHE"] = str(Path(temp_root) / "transformers")
         started = time.monotonic()
-        result = subprocess.run(
-            argv,
+        timeout_seconds = check.get("timeout_seconds", 3600)
+        if not isinstance(timeout_seconds, (int, float)) or timeout_seconds <= 0:
+            raise ValueError(f"invalid timeout_seconds for {check.get('id')}")
+        try:
+            result = subprocess.run(
+                argv,
             cwd=ROOT,
             text=True,
             capture_output=True,
             check=False,
-            env=env,
-        )
+                env=env,
+                timeout=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired as exc:
+            return {
+                "id": check.get("id"), "argv": argv, "returncode": 124,
+                "duration_seconds": round(time.monotonic() - started, 3),
+                "stdout": (exc.stdout or "")[-12000:] if isinstance(exc.stdout, str) else "",
+                "stderr": f"preflight check timed out after {timeout_seconds}s",
+            }
     return {
         "id": check.get("id"),
         "argv": argv,
