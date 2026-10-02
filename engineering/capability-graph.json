@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "repository": "jweter/VoiceStudio",
+  "capabilities": [
+    {
+      "id": "singing-s1-capability-schema",
+      "capability": "S1 - Singing engine capability schema + catalogue filtering.",
+      "state": "PLANNED",
+      "completion_evidence": [
+        "docs/projects/singing-mode.md S1 checklist state",
+        "automated repository contract/preflight evidence on the implementation head"
+      ],
+      "depends_on": [],
+      "slices": [
+        {
+          "id": "s1-capability-schema-catalogue-filtering",
+          "state": "PLANNED",
+          "objective": "Implement the explicitly documented S1 Singing engine capability schema and catalogue filtering so singing compatibility is represented independently from ordinary TTS cloning support.",
+          "acceptance": [
+            "Singing capability flags are represented explicitly in the engine/model schema.",
+            "Catalogue filtering can distinguish singing-compatible engines from ordinary TTS/voice-cloning support.",
+            "Existing speech capability behavior remains backward compatible.",
+            "Repository-native automated tests cover the new schema/filter behavior."
+          ],
+          "allowed_paths": [
+            "backend/**",
+            "src/**",
+            "tests/**",
+            "engineering/**",
+            "docs/projects/singing-mode.md"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key"
+          ],
+          "runner_requirements": [
+            "code",
+            "local",
+            "windows",
+            "offline"
+          ],
+          "runtime_requirements": []
+        }
+      ]
+    }
+  ],
+  "roadmap": [
+    "singing-s1-capability-schema"
+  ]
+}
