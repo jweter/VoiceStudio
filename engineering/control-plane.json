@@ -9,7 +9,8 @@
     "docs/ROADMAP.md",
     "docs/ARCHITECTURE.md",
     "AGENTS.md",
-    "CLAUDE.md"
+    "CLAUDE.md",
+    "engineering/capability-graph.json"
   ],
   "definition_of_done": {
     "implementation_complete": true,
@@ -221,5 +222,6 @@
       }
     ]
   },
-  "development_repository": "jweter/VoiceStudio"
+  "development_repository": "jweter/VoiceStudio",
+  "capability_graph": "engineering/capability-graph.json"
 }
