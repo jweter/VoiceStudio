@@ -19,8 +19,12 @@ SECRET_PATTERNS = [
 
 def load_memory() -> dict[str, Any]:
     payload = json.loads(MEMORY.read_text(encoding="utf-8"))
-    if payload.get("schema_version") != 1 or not isinstance(payload.get("events"), list):
-        raise ValueError("learning-memory.json must be schema_version 1 with an events list")
+    if payload.get("schema_version") != 1 or not isinstance(
+        payload.get("events"), list
+    ):
+        raise ValueError(
+            "learning-memory.json must be schema_version 1 with an events list"
+        )
     return payload
 
 
@@ -60,9 +64,15 @@ def add_event(
     memory = load_memory()
     if any(event.get("fingerprint") == fingerprint for event in memory["events"]):
         return fingerprint
-    event = {**fields, "fingerprint": fingerprint, "recorded_at": datetime.now(UTC).isoformat()}
+    event = {
+        **fields,
+        "fingerprint": fingerprint,
+        "recorded_at": datetime.now(UTC).isoformat(),
+    }
     memory["events"].append(event)
-    MEMORY.write_text(json.dumps(memory, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    MEMORY.write_text(
+        json.dumps(memory, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return fingerprint
 
 
@@ -74,7 +84,10 @@ def validate() -> int:
             raise ValueError("learning event must be an object")
         if event.get("evidence_state") != "VERIFIED":
             raise ValueError("VoiceStudio persists only VERIFIED learning events")
-        if not isinstance(event.get("verification"), str) or not event["verification"].strip():
+        if (
+            not isinstance(event.get("verification"), str)
+            or not event["verification"].strip()
+        ):
             raise ValueError("verified learning event requires verification evidence")
         if _contains_secret(event):
             raise ValueError("learning event appears to contain secret material")
@@ -84,7 +97,9 @@ def validate() -> int:
         if fingerprint in seen:
             raise ValueError("duplicate learning fingerprint")
         seen.add(fingerprint)
-    print(f"VOICESTUDIO LEARNING MEMORY: PASS ({len(memory['events'])} verified events)")
+    print(
+        f"VOICESTUDIO LEARNING MEMORY: PASS ({len(memory['events'])} verified events)"
+    )
     return 0
 
 
@@ -93,20 +108,30 @@ def main() -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("validate")
     record = sub.add_parser("record")
-    for name in ("type", "summary", "root-cause", "successful-pattern", "verification", "residual-risk", "source-ref"):
+    for name in (
+        "type",
+        "summary",
+        "root-cause",
+        "successful-pattern",
+        "verification",
+        "residual-risk",
+        "source-ref",
+    ):
         record.add_argument(f"--{name}", required=True)
     args = parser.parse_args()
     if args.command == "validate":
         return validate()
-    print(add_event(
-        event_type=args.type,
-        summary=args.summary,
-        root_cause=args.root_cause,
-        successful_pattern=args.successful_pattern,
-        verification=args.verification,
-        residual_risk=args.residual_risk,
-        source_ref=args.source_ref,
-    ))
+    print(
+        add_event(
+            event_type=args.type,
+            summary=args.summary,
+            root_cause=args.root_cause,
+            successful_pattern=args.successful_pattern,
+            verification=args.verification,
+            residual_risk=args.residual_risk,
+            source_ref=args.source_ref,
+        )
+    )
     return 0
 
 
