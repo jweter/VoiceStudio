@@ -30,7 +30,9 @@
     "local_first_default",
     "voice_consent_and_model_license_boundaries_preserved",
     "source_and_generation_provenance_preserved",
-    "subjective_singing_quality_not_inferred_from_automated_tests"
+    "subjective_singing_quality_not_inferred_from_automated_tests",
+    "iron_memory_is_advisory_and_live_repository_evidence_remains_authoritative",
+    "verified_engineering_learning_excludes_private_audio_and_unverified_product_reality"
   ],
   "verification": {
     "automated_lanes": [
@@ -143,6 +145,26 @@
         "fast": true
       },
       {
+        "id": "learning_memory",
+        "argv": [
+          "python",
+          "engineering/learning_memory.py",
+          "validate"
+        ],
+        "kind": "governance",
+        "fast": true
+      },
+      {
+        "id": "iron_memory_bridge",
+        "argv": [
+          "python",
+          "engineering/iron_memory.py",
+          "validate"
+        ],
+        "kind": "governance",
+        "fast": true
+      },
+      {
         "id": "python_environment",
         "argv": [
           "uv",
@@ -223,5 +245,21 @@
     ]
   },
   "development_repository": "jweter/VoiceStudio",
-  "capability_graph": "engineering/capability-graph.json"
+  "capability_graph": "engineering/capability-graph.json",
+  "learning_memory": {
+    "schema_version": 1,
+    "path": "engineering/learning-memory.json",
+    "validator": "engineering/learning_memory.py",
+    "rule": "persist only verified sanitized engineering lessons with explicit verification evidence; never persist secrets, credentials, private audio, model weights, or unverified Product Reality"
+  },
+  "iron_memory": {
+    "schema_version": 1,
+    "bridge": "engineering/iron_memory.py",
+    "local_learning_memory": "engineering/learning-memory.json",
+    "shared_root_env": "AZATHOTH_SHARED_MEMORY_DIR",
+    "default_shared_root": "~/.azathoth/shared-memory",
+    "publish_rule": "publish only repository-local learning events with explicit verification; reject secret-like material",
+    "retrieve_rule": "query VERIFIED shared lessons before known-area edits and recurring-failure diagnosis when local shared memory is available",
+    "authority_rule": "live GitHub state, current repository authority, exact-head verification, CI, reviews, and Product Reality always outrank memory"
+  }
 }
