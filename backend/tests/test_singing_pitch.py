@@ -74,3 +74,17 @@ def test_extract_f0_tracks_known_two_note_melody() -> None:
     voiced = [frame.frequency_hz for frame in track.frames if frame.voiced]
     assert any(freq is not None and abs(freq - 220.0) < 5.0 for freq in voiced[:5])
     assert any(freq is not None and abs(freq - 440.0) < 8.0 for freq in voiced[5:])
+
+
+def test_extract_f0_tracks_low_register_without_zero_lag_octave_error() -> None:
+    import numpy as np
+    from services.singing_pitch import extract_f0
+
+    sample_rate = 48000
+    frequency = 82.41
+    t = np.arange(sample_rate // 2, dtype=np.float64) / sample_rate
+    audio = 0.5 * np.sin(2 * np.pi * frequency * t)
+    track = extract_f0(audio, sample_rate, hop_samples=2400, frame_samples=2048)
+    voiced = [frame.frequency_hz for frame in track.frames if frame.voiced]
+    assert voiced
+    assert all(value is not None and abs(value - frequency) < 2.0 for value in voiced[:5])

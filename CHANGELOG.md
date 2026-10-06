@@ -26,6 +26,8 @@ metadata and the backend fallback mirror it.
 
 ### Added
 
+- Add deterministic Singing Mode S3 audio-to-F0 pitch analysis with strict artifact validation (#10)
+
 - Run local narration, transcription, translation and voice-conversion recipes with resumable steps and WAV/TXT exports (#2333)
 
 - Call agent backend: place or answer phone calls that hold a task conversation in your verified or designed voice, with an editable AI disclosure, take-over and an after-call summary (#2306)

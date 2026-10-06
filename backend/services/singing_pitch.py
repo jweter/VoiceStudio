@@ -135,9 +135,36 @@ def extract_f0(
             frames.append(F0Frame(time_seconds, None, False, 0.0))
             continue
         corr = np.correlate(frame, frame, mode="full")[frame.size - 1 :]
-        lag_slice = corr[min_lag : max_lag + 1]
-        lag = min_lag + int(np.argmax(lag_slice))
-        confidence = float(corr[lag] / corr[0]) if corr[0] > 0 else 0.0
+        # Normalize every lag by the energy in its actual overlap. Raw
+        # autocorrelation systematically favors short lags because they retain
+        # more samples, which can turn the zero-lag shoulder into a false F0.
+        squared = frame * frame
+        prefix = np.concatenate(([0.0], np.cumsum(squared)))
+        normalized = np.zeros(max_lag - min_lag + 1, dtype=np.float64)
+        for index, lag_value in enumerate(range(min_lag, max_lag + 1)):
+            left_energy = prefix[frame.size - lag_value] - prefix[0]
+            right_energy = prefix[frame.size] - prefix[lag_value]
+            denominator = math.sqrt(max(0.0, left_energy * right_energy))
+            if denominator > 1e-12:
+                normalized[index] = corr[lag_value] / denominator
+
+        # A pitch period is a local periodic peak, not merely the strongest
+        # value at the minimum allowed lag. Prefer the first strong local peak
+        # so integer multiples do not win over the fundamental period.
+        peaks = [
+            index
+            for index in range(1, normalized.size - 1)
+            if normalized[index] >= normalized[index - 1]
+            and normalized[index] > normalized[index + 1]
+        ]
+        if peaks:
+            best_value = max(normalized[index] for index in peaks)
+            strong = [index for index in peaks if normalized[index] >= 0.95 * best_value]
+            peak_index = min(strong)
+        else:
+            peak_index = int(np.argmax(normalized))
+        lag = min_lag + peak_index
+        confidence = float(normalized[peak_index])
         confidence = max(0.0, min(1.0, confidence))
         if confidence < voicing_threshold:
             frames.append(F0Frame(time_seconds, None, False, confidence))
