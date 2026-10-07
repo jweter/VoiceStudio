@@ -50,3 +50,18 @@ def test_source_rejects_coercible_numeric_types() -> None:
 def test_project_requires_explicit_target_voice() -> None:
     with pytest.raises(ValueError, match="target_voice_id"):
         SingingProject("song-001", _source(), "")
+
+
+def test_project_rejects_boolean_schema_version() -> None:
+    payload = SingingProject("song-001", _source(), "voice-123").to_dict()
+    payload["schema_version"] = True
+    with pytest.raises(ValueError, match="schema version"):
+        SingingProject.from_dict(payload)
+
+
+@pytest.mark.parametrize(("field", "value"), [("project_id", 1), ("target_voice_id", True)])
+def test_project_constructor_rejects_non_string_identifiers(field: str, value: object) -> None:
+    values = {"project_id": "song-001", "source": _source(), "target_voice_id": "voice-123"}
+    values[field] = value
+    with pytest.raises(ValueError, match=field):
+        SingingProject(**values)
