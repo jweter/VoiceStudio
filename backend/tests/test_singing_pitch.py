@@ -74,3 +74,11 @@ def test_extract_f0_tracks_known_two_note_melody() -> None:
     voiced = [frame.frequency_hz for frame in track.frames if frame.voiced]
     assert any(freq is not None and abs(freq - 220.0) < 5.0 for freq in voiced[:5])
     assert any(freq is not None and abs(freq - 440.0) < 8.0 for freq in voiced[5:])
+
+
+def test_singing_capability_vocabulary_is_explicit() -> None:
+    from worker.capabilities import SINGING_CAPABILITIES
+
+    assert "singing_conversion" in SINGING_CAPABILITIES
+    assert "singing_synthesis" in SINGING_CAPABILITIES
+    assert "pitch_conditioning" in SINGING_CAPABILITIES
