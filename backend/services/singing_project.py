@@ -57,10 +57,10 @@ class SingingProject:
     lyrics: str | None = None
 
     def __post_init__(self) -> None:
-        if not self.project_id or not self.project_id.strip():
-            raise ValueError("project_id must be non-empty")
-        if not self.target_voice_id or not self.target_voice_id.strip():
-            raise ValueError("target_voice_id must be non-empty")
+        if not isinstance(self.project_id, str) or not self.project_id.strip():
+            raise ValueError("project_id must be a non-empty string")
+        if not isinstance(self.target_voice_id, str) or not self.target_voice_id.strip():
+            raise ValueError("target_voice_id must be a non-empty string")
         if self.lyrics is not None and not isinstance(self.lyrics, str):
             raise ValueError("lyrics must be a string or null")
 
@@ -81,7 +81,7 @@ class SingingProject:
         expected = {"schema_version", "project_id", "source", "target_voice_id", "lyrics"}
         if set(payload) != expected:
             raise ValueError("singing project contains missing or unsupported fields")
-        if payload["schema_version"] != SINGING_PROJECT_SCHEMA_VERSION:
+        if type(payload["schema_version"]) is not int or payload["schema_version"] != SINGING_PROJECT_SCHEMA_VERSION:
             raise ValueError("unsupported singing project schema version")
         raw_source = payload["source"]
         if not isinstance(raw_source, dict) or set(raw_source) != {
