@@ -470,3 +470,16 @@ def test_invalid_engine_singing_metadata_fails_closed(registry_sandbox, caplog):
     assert row["singing_capabilities"] == []
     assert list_backends(singing_capability="singing_conversion") == []
     assert "unknown singing capabilities" in caplog.text
+
+
+def test_mixed_type_singing_metadata_cannot_break_catalogue(registry_sandbox, caplog):
+    class MixedMetadataBackend(HealthyInProcessBackend):
+        id = "mixed-singing-metadata-test"
+        display_name = "Mixed singing metadata test"
+        singing_capabilities = ["singing_conversion", 42, "unsupported_capability"]
+
+    registry_sandbox[MixedMetadataBackend.id] = MixedMetadataBackend
+    row = next(item for item in list_backends() if item["id"] == MixedMetadataBackend.id)
+    assert row["singing_capabilities"] == []
+    assert list_backends(singing_capability="singing_conversion") == []
+    assert "invalid singing_capabilities" in caplog.text
