@@ -320,7 +320,7 @@ Only after deterministic checks pass:
 ## Initial implementation milestones
 
 - [x] S0 — Architecture decision: singing as separate engine capability. See `docs/adr/ADR-SING-001-separate-singing-capability.md`.
-- [ ] S1 — Singing engine capability schema + catalogue filtering.
+- [x] S1 — Singing engine capability schema + catalogue filtering. Explicit `singing_capabilities` vocabulary on `TTSBackend` (`backend/services/tts_backend.py`), validated fail-closed, exposed on every `list_backends()`/`/engines/tts` entry, and filterable via `singing_capability=` (API: `GET /engines/tts?singing_capability=...`, fail-closed 422 on an unknown name). No existing speech engine is singing-eligible until it explicitly opts in. See `tests/backend/services/test_tts_backend_registry.py` and `tests/backend/api/test_engines_route_shape.py`.
 - [ ] S2 — Singing project/input data model.
 - [ ] S3 — F0/pitch-analysis service with golden fixtures.
 - [ ] S4 — First local singing voice-conversion adapter.
