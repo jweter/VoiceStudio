@@ -7,13 +7,28 @@ from pathlib import PurePosixPath
 
 SINGING_PROJECT_SCHEMA_VERSION = 1
 _ALLOWED_SOURCE_KINDS = {"guide_vocal", "original_mix"}
+_WINDOWS_RESERVED_NAMES = {"CON", "PRN", "AUX", "NUL"} | {
+    f"{prefix}{number}" for prefix in ("COM", "LPT") for number in range(1, 10)
+}
+_WINDOWS_FORBIDDEN_CHARS = set('<>:"|?*')
 
 
 def _safe_relative_path(name: str, value: object) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{name} must be a non-empty string")
     path = PurePosixPath(value)
-    if path.is_absolute() or ".." in path.parts or "\\" in value:
+    if (
+        path.is_absolute()
+        or ".." in path.parts
+        or "\\" in value
+        or str(path) != value
+        or any(
+            segment.endswith((".", " "))
+            or any(char in _WINDOWS_FORBIDDEN_CHARS or ord(char) < 32 for char in segment)
+            or segment.split(".", 1)[0].upper() in _WINDOWS_RESERVED_NAMES
+            for segment in path.parts
+        )
+    ):
         raise ValueError(f"{name} must be a safe project-relative POSIX path")
     return value
 
