@@ -65,3 +65,24 @@ def test_project_constructor_rejects_non_string_identifiers(field: str, value: o
     values[field] = value
     with pytest.raises(ValueError, match=field):
         SingingProject(**values)
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "C:/Users/name/guide.wav",
+        "source/CON.wav",
+        "source/aux.txt",
+        "source/COM1.wav",
+        "source/LPT9",
+        "source/guide.wav.",
+        "source/guide.wav ",
+        "source/guide:take.wav",
+        "source/guide?.wav",
+        "source//guide.wav",
+        "source/./guide.wav",
+        "source/guide.wav/",
+    ],
+)
+def test_source_rejects_nonportable_or_noncanonical_paths(path: str) -> None:
+    with pytest.raises(ValueError, match="project-relative"):
+        _source(path=path)
