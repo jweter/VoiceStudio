@@ -7,13 +7,30 @@ from pathlib import PurePosixPath
 
 SINGING_PROJECT_SCHEMA_VERSION = 1
 _ALLOWED_SOURCE_KINDS = {"guide_vocal", "original_mix"}
+_WINDOWS_DEVICE_NAMES = frozenset(
+    {"CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$"}
+    | {f"{prefix}{digit}" for prefix in ("COM", "LPT") for digit in "123456789¹²³"}
+)
+_WINDOWS_FORBIDDEN_CHARS = frozenset('\\:<>"|?*')
 
 
 def _safe_relative_path(name: str, value: object) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{name} must be a non-empty string")
-    path = PurePosixPath(value)
-    if path.is_absolute() or ".." in path.parts or "\\" in value:
+    # Persist only canonical POSIX-relative paths safe on Windows as well.
+    # PurePosixPath alone accepts drive-relative paths, NTFS streams and devices.
+    parts = value.split("/")
+    if (
+        PurePosixPath(value).is_absolute()
+        or any(ord(char) < 32 or char in _WINDOWS_FORBIDDEN_CHARS for char in value)
+        or any(
+            not part
+            or part in {".", ".."}
+            or part.endswith((" ", "."))
+            or part.split(".", 1)[0].upper() in _WINDOWS_DEVICE_NAMES
+            for part in parts
+        )
+    ):
         raise ValueError(f"{name} must be a safe project-relative POSIX path")
     return value
 
@@ -31,9 +48,8 @@ class SingingSource:
         if self.kind not in _ALLOWED_SOURCE_KINDS:
             raise ValueError("unsupported singing source kind")
         _safe_relative_path("path", self.path)
-        if (
-            len(self.sha256) != 64
-            or any(char not in "0123456789abcdef" for char in self.sha256)
+        if len(self.sha256) != 64 or any(
+            char not in "0123456789abcdef" for char in self.sha256
         ):
             raise ValueError("sha256 must be 64 lowercase hexadecimal characters")
         if type(self.sample_rate) is not int or self.sample_rate <= 0:
@@ -59,7 +75,10 @@ class SingingProject:
     def __post_init__(self) -> None:
         if not isinstance(self.project_id, str) or not self.project_id.strip():
             raise ValueError("project_id must be a non-empty string")
-        if not isinstance(self.target_voice_id, str) or not self.target_voice_id.strip():
+        if (
+            not isinstance(self.target_voice_id, str)
+            or not self.target_voice_id.strip()
+        ):
             raise ValueError("target_voice_id must be a non-empty string")
         if self.lyrics is not None and not isinstance(self.lyrics, str):
             raise ValueError("lyrics must be a string or null")
@@ -78,14 +97,28 @@ class SingingProject:
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> "SingingProject":
-        expected = {"schema_version", "project_id", "source", "target_voice_id", "lyrics"}
+        expected = {
+            "schema_version",
+            "project_id",
+            "source",
+            "target_voice_id",
+            "lyrics",
+        }
         if set(payload) != expected:
             raise ValueError("singing project contains missing or unsupported fields")
-        if type(payload["schema_version"]) is not int or payload["schema_version"] != SINGING_PROJECT_SCHEMA_VERSION:
+        if (
+            type(payload["schema_version"]) is not int
+            or payload["schema_version"] != SINGING_PROJECT_SCHEMA_VERSION
+        ):
             raise ValueError("unsupported singing project schema version")
         raw_source = payload["source"]
         if not isinstance(raw_source, dict) or set(raw_source) != {
-            "kind", "path", "sha256", "sample_rate", "channels", "duration_seconds"
+            "kind",
+            "path",
+            "sha256",
+            "sample_rate",
+            "channels",
+            "duration_seconds",
         }:
             raise ValueError("invalid singing source")
         source = SingingSource(**raw_source)

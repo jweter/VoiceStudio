@@ -22,7 +22,9 @@ def test_singing_project_round_trip_is_deterministic() -> None:
     assert SingingProject.from_dict(project.to_dict()).to_json() == project.to_json()
 
 
-@pytest.mark.parametrize("path", ["/tmp/guide.wav", "../guide.wav", "source\\guide.wav"])
+@pytest.mark.parametrize(
+    "path", ["/tmp/guide.wav", "../guide.wav", "source\\guide.wav"]
+)
 def test_source_path_must_stay_inside_project(path: str) -> None:
     with pytest.raises(ValueError, match="project-relative"):
         _source(path=path)
@@ -59,9 +61,55 @@ def test_project_rejects_boolean_schema_version() -> None:
         SingingProject.from_dict(payload)
 
 
-@pytest.mark.parametrize(("field", "value"), [("project_id", 1), ("target_voice_id", True)])
-def test_project_constructor_rejects_non_string_identifiers(field: str, value: object) -> None:
-    values = {"project_id": "song-001", "source": _source(), "target_voice_id": "voice-123"}
+@pytest.mark.parametrize(
+    ("field", "value"), [("project_id", 1), ("target_voice_id", True)]
+)
+def test_project_constructor_rejects_non_string_identifiers(
+    field: str, value: object
+) -> None:
+    values = {
+        "project_id": "song-001",
+        "source": _source(),
+        "target_voice_id": "voice-123",
+    }
     values[field] = value
     with pytest.raises(ValueError, match=field):
         SingingProject(**values)
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "C:/Users/example/audio.wav",
+        "C:relative.wav",
+        "source/guide.wav:stream",
+        ".",
+        "source/",
+        "source/./guide.wav",
+        "source//guide.wav",
+        "source/\x00guide.wav",
+        "source/\x1fguide.wav",
+        "source/CON.wav",
+        "source/NUL.txt",
+        "source/COM1.wav",
+        "source/LPT9",
+        "source/COM¹.wav",
+        "source/CONOUT$.wav",
+        "source/guide.wav.",
+        "source/guide.wav ",
+        "source/guide?.wav",
+        "source/guide*.wav",
+        "source/guide|vocal.wav",
+    ],
+)
+def test_source_rejects_unsafe_cross_platform_paths(path: str) -> None:
+    with pytest.raises(ValueError, match="project-relative"):
+        _source(path=path)
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["source/guide.wav", "source/.guide.wav", "source/part one.wav", "source/a..b.wav"],
+)
+def test_source_accepts_canonical_cross_platform_paths(path: str) -> None:
+    assert _source(path=path).path == path
