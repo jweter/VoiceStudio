@@ -22,7 +22,10 @@ def test_singing_project_round_trip_is_deterministic() -> None:
     assert SingingProject.from_dict(project.to_dict()).to_json() == project.to_json()
 
 
-@pytest.mark.parametrize("path", ["/tmp/guide.wav", "../guide.wav", "source\\guide.wav"])
+@pytest.mark.parametrize(
+    "path",
+    ["/tmp/guide.wav", "../guide.wav", "source\\guide.wav", "C:/temp/guide.wav", "D:guide.wav"],
+)
 def test_source_path_must_stay_inside_project(path: str) -> None:
     with pytest.raises(ValueError, match="project-relative"):
         _source(path=path)

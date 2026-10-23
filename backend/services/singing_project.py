@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 import json
 import math
-from pathlib import PurePosixPath
+from pathlib import PurePosixPath, PureWindowsPath
 
 SINGING_PROJECT_SCHEMA_VERSION = 1
 _ALLOWED_SOURCE_KINDS = {"guide_vocal", "original_mix"}
@@ -13,7 +13,7 @@ def _safe_relative_path(name: str, value: object) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{name} must be a non-empty string")
     path = PurePosixPath(value)
-    if path.is_absolute() or ".." in path.parts or "\\" in value:
+    if path.is_absolute() or PureWindowsPath(value).drive or ".." in path.parts or "\\" in value:
         raise ValueError(f"{name} must be a safe project-relative POSIX path")
     return value
 
