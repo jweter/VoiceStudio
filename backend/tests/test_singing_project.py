@@ -138,3 +138,25 @@ def test_project_rejects_non_object_payload_with_validation_error(
 ) -> None:
     with pytest.raises(ValueError, match="project must be a JSON object"):
         SingingProject.from_dict(payload)
+
+
+def test_singing_project_json_round_trip_preserves_source_provenance() -> None:
+    project = SingingProject("song-001", _source(), "voice-123", "lyrics")
+    assert SingingProject.from_json(project.to_json()) == project
+    assert SingingProject.from_json(project.to_json()).to_json() == project.to_json()
+
+
+def test_singing_project_json_rejects_duplicate_source_hash() -> None:
+    project = SingingProject("song-001", _source(), "voice-123")
+    duplicate = '"sha256":"' + "b" * 64 + '","sha256":'
+    corrupted = project.to_json().replace('"sha256":', duplicate, 1)
+    with pytest.raises(ValueError, match="duplicate singing project JSON key"):
+        SingingProject.from_json(corrupted)
+
+
+@pytest.mark.parametrize(
+    "raw", ["{broken", "[]", "null", 123, None, '{"duration":NaN}']
+)
+def test_singing_project_json_rejects_invalid_payload(raw: object) -> None:
+    with pytest.raises(ValueError):
+        SingingProject.from_json(raw)

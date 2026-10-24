@@ -101,6 +101,31 @@ class SingingProject:
         return json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":")) + "\n"
 
     @classmethod
+    def from_json(cls, raw: str) -> "SingingProject":
+        """Parse persisted project metadata without silent provenance overrides."""
+        if not isinstance(raw, str):
+            raise ValueError("singing project JSON must be a string")
+
+        def unique_pairs(pairs: list[tuple[str, object]]) -> dict[str, object]:
+            result: dict[str, object] = {}
+            for key, value in pairs:
+                if key in result:
+                    raise ValueError("duplicate singing project JSON key")
+                result[key] = value
+            return result
+
+        def reject_constant(value: str) -> None:
+            raise ValueError("nonstandard singing project JSON number")
+
+        try:
+            payload = json.loads(
+                raw, object_pairs_hook=unique_pairs, parse_constant=reject_constant
+            )
+        except json.JSONDecodeError as exc:
+            raise ValueError("invalid singing project JSON") from exc
+        return cls.from_dict(payload)
+
+    @classmethod
     def from_dict(cls, payload: object) -> "SingingProject":
         if not isinstance(payload, dict):
             raise ValueError("singing project must be a JSON object")
