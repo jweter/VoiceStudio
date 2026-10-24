@@ -113,3 +113,15 @@ def test_source_rejects_unsafe_cross_platform_paths(path: str) -> None:
 )
 def test_source_accepts_canonical_cross_platform_paths(path: str) -> None:
     assert _source(path=path).path == path
+
+
+@pytest.mark.parametrize("value", [None, [], {}, 42, True])
+def test_source_rejects_non_string_hash_with_validation_error(value: object) -> None:
+    with pytest.raises(ValueError, match="sha256"):
+        _source(sha256=value)
+
+
+@pytest.mark.parametrize("value", [None, [], {}, 42, True])
+def test_source_rejects_non_string_kind_with_validation_error(value: object) -> None:
+    with pytest.raises(ValueError, match="kind"):
+        _source(kind=value)

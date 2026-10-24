@@ -45,11 +45,13 @@ class SingingSource:
     duration_seconds: float
 
     def __post_init__(self) -> None:
-        if self.kind not in _ALLOWED_SOURCE_KINDS:
+        if not isinstance(self.kind, str) or self.kind not in _ALLOWED_SOURCE_KINDS:
             raise ValueError("unsupported singing source kind")
         _safe_relative_path("path", self.path)
-        if len(self.sha256) != 64 or any(
-            char not in "0123456789abcdef" for char in self.sha256
+        if (
+            not isinstance(self.sha256, str)
+            or len(self.sha256) != 64
+            or any(char not in "0123456789abcdef" for char in self.sha256)
         ):
             raise ValueError("sha256 must be 64 lowercase hexadecimal characters")
         if type(self.sample_rate) is not int or self.sample_rate <= 0:
