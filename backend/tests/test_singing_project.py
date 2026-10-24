@@ -130,3 +130,11 @@ def test_source_rejects_non_string_kind_with_validation_error(value: object) -> 
 def test_source_rejects_unrepresentably_large_duration_with_validation_error() -> None:
     with pytest.raises(ValueError, match="duration_seconds"):
         _source(duration_seconds=10**400)
+
+
+@pytest.mark.parametrize("payload", [None, [], ["bad"], 1, True, "invalid"])
+def test_project_rejects_non_object_payload_with_validation_error(
+    payload: object,
+) -> None:
+    with pytest.raises(ValueError, match="project must be a JSON object"):
+        SingingProject.from_dict(payload)

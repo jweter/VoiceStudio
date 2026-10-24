@@ -101,7 +101,9 @@ class SingingProject:
         return json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":")) + "\n"
 
     @classmethod
-    def from_dict(cls, payload: dict[str, object]) -> "SingingProject":
+    def from_dict(cls, payload: object) -> "SingingProject":
+        if not isinstance(payload, dict):
+            raise ValueError("singing project must be a JSON object")
         expected = {
             "schema_version",
             "project_id",
