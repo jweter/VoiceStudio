@@ -58,12 +58,15 @@ class SingingSource:
             raise ValueError("sample_rate must be a positive integer")
         if type(self.channels) is not int or self.channels <= 0:
             raise ValueError("channels must be a positive integer")
-        if (
-            isinstance(self.duration_seconds, bool)
-            or not isinstance(self.duration_seconds, (int, float))
-            or not math.isfinite(float(self.duration_seconds))
-            or self.duration_seconds <= 0
+        if isinstance(self.duration_seconds, bool) or not isinstance(
+            self.duration_seconds, (int, float)
         ):
+            raise ValueError("duration_seconds must be positive and finite")
+        try:
+            finite = math.isfinite(float(self.duration_seconds))
+        except OverflowError:
+            finite = False
+        if not finite or self.duration_seconds <= 0:
             raise ValueError("duration_seconds must be positive and finite")
 
 

@@ -125,3 +125,8 @@ def test_source_rejects_non_string_hash_with_validation_error(value: object) -> 
 def test_source_rejects_non_string_kind_with_validation_error(value: object) -> None:
     with pytest.raises(ValueError, match="kind"):
         _source(kind=value)
+
+
+def test_source_rejects_unrepresentably_large_duration_with_validation_error() -> None:
+    with pytest.raises(ValueError, match="duration_seconds"):
+        _source(duration_seconds=10**400)
