@@ -1,5 +1,10 @@
 # VoiceStudio — Road to World-Class
 
+## Owner-approved Singing Mode milestone (2026-10-25)
+
+Prioritize a usable speech-to-singing workflow: import recorded speech, select a singing style, generate a performance, preview the audio, and export the result. Preserve existing VoiceStudio dubbing/voice-design capabilities and its local-first direction (the online-source decision applies only to Knowledge Engine). Reconcile and verify existing Singing Mode S2 project-model work before building S3 pitch/timing analysis. Require real audible Product Reality, valid source paths and durations, quality measurement, and export verification. See `docs/OWNER_APPROVED_ROADMAP_2026-10-25.md`.
+
+
 **Last updated:** 2026-09-29 · **Current phase:** Phases 0–4 complete. Singing/performance-style presets are now a planned creative expansion alongside the Design / Performance / Quality tracks. · **Resourcing:** 1 FTE + ad-hoc
 
 Honest plan for moving from "polished solo-dev project" to software that holds up under scrutiny at scale. Living tracker: every item has a status, every phase has a progress bar, every shipped item has a date.
