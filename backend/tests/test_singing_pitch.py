@@ -1,6 +1,7 @@
+import numpy as np
 import pytest
 
-from services.singing_pitch import F0Frame, F0Track
+from services.singing_pitch import F0Frame, F0Track, extract_f0
 
 
 def test_f0_track_round_trip_is_deterministic() -> None:
@@ -74,3 +75,14 @@ def test_extract_f0_tracks_known_two_note_melody() -> None:
     voiced = [frame.frequency_hz for frame in track.frames if frame.voiced]
     assert any(freq is not None and abs(freq - 220.0) < 5.0 for freq in voiced[:5])
     assert any(freq is not None and abs(freq - 440.0) < 8.0 for freq in voiced[5:])
+
+
+@pytest.mark.parametrize("threshold", [-0.1, 1.1, float("nan"), float("inf")])
+def test_f0_extractor_rejects_invalid_voicing_threshold(threshold: float) -> None:
+    with pytest.raises(ValueError, match="voicing_threshold"):
+        extract_f0(np.arange(128, dtype=np.float64), 48000, voicing_threshold=threshold)
+
+
+def test_f0_extractor_rejects_frame_shorter_than_minimum_pitch_lag() -> None:
+    with pytest.raises(ValueError, match="frame_samples"):
+        extract_f0(np.arange(128, dtype=np.float64), 48000, frame_samples=8)

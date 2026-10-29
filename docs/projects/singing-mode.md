@@ -349,3 +349,5 @@ The first milestone is **not** "make any text sing." The first milestone is a re
 S3 golden-fixture sub-slice (in development): deterministic aligned F0 comparison reports voiced agreement, mean absolute pitch error in cents, and octave-displacement rate. Synthetic two-note/silence fixtures exercise these metrics without third-party audio or model downloads; this is not singing-conversion Product Reality and does not complete S3.
 
 The S3 F0 comparator calculates cents as a difference of logarithms, avoiding overflow and underflow for positive finite pitch values. Numerical robustness is not evidence of physical plausibility or conversion quality.
+
+The F0 extractor rejects nonfinite or out-of-range voicing thresholds and frame windows too short to represent the minimum pitch lag, rather than returning misleading voiced frames or failing in autocorrelation.
