@@ -294,7 +294,7 @@ Measure:
 - F0 error in cents;
 - voiced/unvoiced agreement;
 - onset timing difference;
-- duration drift;
+- duration drift (WAV F0 comparisons reject even sub-hop sample-count mismatches);
 - octave-error rate;
 - output clipping;
 - loudness;

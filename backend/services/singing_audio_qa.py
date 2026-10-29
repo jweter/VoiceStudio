@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import wave
 
 from services.singing_pitch import extract_f0_wav
 from services.singing_pitch_metrics import F0Comparison, compare_f0_tracks
@@ -34,4 +35,13 @@ def compare_f0_wavs(
     }
     reference = extract_f0_wav(reference_path, **options)
     observed = extract_f0_wav(observed_path, **options)
-    return compare_f0_tracks(reference, observed)
+    comparison = compare_f0_tracks(reference, observed)
+    # Two WAVs can yield identical F0 frame timestamps while their trailing
+    # partial-hop samples differ. Do not report those as sample-aligned.
+    with (
+        wave.open(str(reference_path), "rb") as guide,
+        wave.open(str(observed_path), "rb") as output,
+    ):
+        if guide.getnframes() != output.getnframes():
+            raise ValueError("F0 WAV inputs must have matching sample counts")
+    return comparison

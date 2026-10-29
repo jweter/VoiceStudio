@@ -71,3 +71,15 @@ def test_stereo_input_fails_explicitly(tmp_path):
     _write_tone(output, channels=2)
     with pytest.raises(ValueError, match="mono 16-bit PCM"):
         _compare(reference, output)
+
+
+def test_same_pitch_but_different_wav_sample_counts_is_not_reported_as_aligned(
+    tmp_path,
+):
+    reference = tmp_path / "guide.wav"
+    output = tmp_path / "short-drift.wav"
+    # Both lengths produce eleven F0 frames at a 960-sample hop.
+    _write_tone(reference, seconds=0.205)
+    _write_tone(output, seconds=0.209)
+    with pytest.raises(ValueError, match="matching sample counts"):
+        _compare(reference, output)
