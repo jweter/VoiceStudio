@@ -1,5 +1,7 @@
 """Golden-fixture checks for the deterministic Singing Mode F0 comparator."""
 
+import math
+
 import numpy as np
 import pytest
 
@@ -91,3 +93,19 @@ def test_misaligned_or_mismatched_tracks_are_rejected() -> None:
         compare_f0_tracks(reference, F0Track(44100, 480, reference.frames))
     with pytest.raises(ValueError, match="frame counts"):
         compare_f0_tracks(reference, F0Track(48000, 480, ()))
+
+
+@pytest.mark.parametrize(
+    "reference_hz, observed_hz", [(1e-300, 1e300), (1e300, 1e-300)]
+)
+def test_extreme_positive_frequencies_remain_finite(
+    reference_hz: float, observed_hz: float
+) -> None:
+    """Positive finite inputs must not overflow or underflow the cents metric."""
+    reference = F0Track(48000, 480, (F0Frame(0.0, reference_hz, True, 1.0),))
+    observed = F0Track(48000, 480, (F0Frame(0.0, observed_hz, True, 1.0),))
+    result = compare_f0_tracks(reference, observed)
+    expected = 1200.0 * abs(math.log2(observed_hz) - math.log2(reference_hz))
+    assert result.mean_absolute_cents is not None
+    assert math.isfinite(result.mean_absolute_cents)
+    assert result.mean_absolute_cents == pytest.approx(expected)

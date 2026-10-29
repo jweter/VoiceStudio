@@ -48,7 +48,13 @@ def compare_f0_tracks(reference: F0Track, observed: F0Track) -> F0Comparison:
             assert expected.frequency_hz is not None
             assert actual.frequency_hz is not None
             errors.append(
-                abs(1200.0 * math.log2(actual.frequency_hz / expected.frequency_hz))
+                abs(
+                    1200.0
+                    * (
+                        math.log2(actual.frequency_hz)
+                        - math.log2(expected.frequency_hz)
+                    )
+                )
             )
 
     count = len(reference.frames)

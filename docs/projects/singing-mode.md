@@ -347,3 +347,5 @@ Given a short, clean sung guide vocal and an authorized target voice, VoiceStudi
 The first milestone is **not** "make any text sing." The first milestone is a reliable, measurable singing-voice-conversion path that gives VoiceStudio a real musical-voice capability without compromising the existing speech architecture.
 
 S3 golden-fixture sub-slice (in development): deterministic aligned F0 comparison reports voiced agreement, mean absolute pitch error in cents, and octave-displacement rate. Synthetic two-note/silence fixtures exercise these metrics without third-party audio or model downloads; this is not singing-conversion Product Reality and does not complete S3.
+
+The S3 F0 comparator calculates cents as a difference of logarithms, avoiding overflow and underflow for positive finite pitch values. Numerical robustness is not evidence of physical plausibility or conversion quality.
