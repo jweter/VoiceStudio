@@ -345,3 +345,5 @@ Given a short, clean sung guide vocal and an authorized target voice, VoiceStudi
 6. requires no cloud service.
 
 The first milestone is **not** "make any text sing." The first milestone is a reliable, measurable singing-voice-conversion path that gives VoiceStudio a real musical-voice capability without compromising the existing speech architecture.
+
+S3 golden-fixture sub-slice (in development): deterministic aligned F0 comparison reports voiced agreement, mean absolute pitch error in cents, and octave-displacement rate. Synthetic two-note/silence fixtures exercise these metrics without third-party audio or model downloads; this is not singing-conversion Product Reality and does not complete S3.
