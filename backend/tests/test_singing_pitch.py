@@ -1,7 +1,9 @@
+import wave
+
 import numpy as np
 import pytest
 
-from services.singing_pitch import F0Frame, F0Track, extract_f0
+from services.singing_pitch import F0Frame, F0Track, extract_f0, extract_f0_wav
 
 
 def test_f0_track_round_trip_is_deterministic() -> None:
@@ -86,3 +88,41 @@ def test_f0_extractor_rejects_invalid_voicing_threshold(threshold: float) -> Non
 def test_f0_extractor_rejects_frame_shorter_than_minimum_pitch_lag() -> None:
     with pytest.raises(ValueError, match="frame_samples"):
         extract_f0(np.arange(128, dtype=np.float64), 48000, frame_samples=8)
+
+
+def test_f0_wav_ingest_tracks_real_pcm_file(tmp_path) -> None:
+    rate = 48000
+    t = np.arange(rate // 4, dtype=np.float64) / rate
+    audio = (0.4 * np.sin(2 * np.pi * 220.0 * t) * 32767).astype("<i2")
+    path = tmp_path / "guide.wav"
+    with wave.open(str(path), "wb") as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(rate)
+        wav.writeframes(audio.tobytes())
+    track = extract_f0_wav(
+        path,
+        hop_samples=2400,
+        frame_samples=4096,
+        min_hz=100,
+        max_hz=600,
+        voicing_threshold=0.5,
+    )
+    assert track.sample_rate == rate
+    assert any(
+        frame.voiced and abs(frame.frequency_hz - 220.0) < 5.0 for frame in track.frames
+    )
+
+
+@pytest.mark.parametrize(("channels", "sample_width"), [(2, 2), (1, 1)])
+def test_f0_wav_ingest_rejects_unsupported_pcm_formats(
+    tmp_path, channels, sample_width
+) -> None:
+    path = tmp_path / "unsupported.wav"
+    with wave.open(str(path), "wb") as wav:
+        wav.setnchannels(channels)
+        wav.setsampwidth(sample_width)
+        wav.setframerate(48000)
+        wav.writeframes(bytes(1024 * channels * sample_width))
+    with pytest.raises(ValueError, match="mono 16-bit PCM"):
+        extract_f0_wav(path)

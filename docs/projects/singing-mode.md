@@ -351,3 +351,5 @@ S3 golden-fixture sub-slice (in development): deterministic aligned F0 compariso
 The S3 F0 comparator calculates cents as a difference of logarithms, avoiding overflow and underflow for positive finite pitch values. Numerical robustness is not evidence of physical plausibility or conversion quality.
 
 The F0 extractor rejects nonfinite or out-of-range voicing thresholds and frame windows too short to represent the minimum pitch lag, rather than returning misleading voiced frames or failing in autocorrelation.
+
+S3 guide-WAV ingestion (development candidate): the deterministic F0 service can read uncompressed mono 16-bit PCM WAV files directly, preserving their sample rate. Stereo, compressed, and other PCM widths fail explicitly rather than silently changing channels or amplitude. This is a preprocessing component, not voice conversion or an accepted S3 milestone.

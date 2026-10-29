@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 import json
 import math
+from pathlib import Path
+import wave
 from numbers import Real
 
 import numpy as np
@@ -163,3 +165,34 @@ def extract_f0(
         else:
             frames.append(F0Frame(time_seconds, sample_rate / lag, True, confidence))
     return F0Track(sample_rate, hop_samples, tuple(frames))
+
+
+def extract_f0_wav(
+    path: str | Path,
+    *,
+    hop_samples: int = 480,
+    frame_samples: int = 2048,
+    min_hz: float = 70.0,
+    max_hz: float = 1000.0,
+    voicing_threshold: float = 0.30,
+) -> F0Track:
+    """Extract a pitch track from an uncompressed mono 16-bit PCM guide WAV."""
+    with wave.open(str(path), "rb") as source:
+        if (
+            source.getnchannels() != 1
+            or source.getsampwidth() != 2
+            or source.getcomptype() != "NONE"
+        ):
+            raise ValueError("F0 WAV input must be uncompressed mono 16-bit PCM")
+        sample_rate = source.getframerate()
+        pcm = source.readframes(source.getnframes())
+    audio = np.frombuffer(pcm, dtype="<i2").astype(np.float64) / 32768.0
+    return extract_f0(
+        audio,
+        sample_rate,
+        hop_samples=hop_samples,
+        frame_samples=frame_samples,
+        min_hz=min_hz,
+        max_hz=max_hz,
+        voicing_threshold=voicing_threshold,
+    )
