@@ -185,7 +185,13 @@ def extract_f0_wav(
         ):
             raise ValueError("F0 WAV input must be uncompressed mono 16-bit PCM")
         sample_rate = source.getframerate()
-        pcm = source.readframes(source.getnframes())
+        declared_frames = source.getnframes()
+        pcm = source.readframes(declared_frames)
+        # wave.readframes may silently return fewer bytes than the header
+        # declares when a recording is truncated. Never analyze partial audio
+        # as if it were a complete guide vocal.
+        if len(pcm) != declared_frames * 2:
+            raise ValueError("truncated PCM WAV: missing declared audio frames")
     audio = np.frombuffer(pcm, dtype="<i2").astype(np.float64) / 32768.0
     return extract_f0(
         audio,
