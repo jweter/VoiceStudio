@@ -72,11 +72,11 @@
         {
           "id": "s2-singing-project-layout",
           "state": "PLANNED",
-          "objective": "Add backend/services/singing_project.py with one pure function, singing_project_paths(project_id: str) -> dict[str, str], returning the documented singing project layout as relative POSIX paths (source/, analysis/, voice/, renders/, metadata/, logs/ and the named artifact files) and rejecting any project id that is empty, absolute or could escape the project root. The function touches no filesystem; creating the directories is a later slice.",
+          "objective": "Add backend/services/singing_project.py with one pure function, singing_project_paths(project_id: str) -> dict[str, str], returning the documented singing project layout as relative POSIX paths (source/, analysis/, voice/, renders/, metadata/, logs/ and the named artifact files) and returning an empty dict for any project id that is empty, whitespace-only, absolute or could escape the project root (the function is total and never raises). The function touches no filesystem; creating the directories is a later slice.",
           "acceptance": [
             "the returned paths match exactly the directories and artifact file names documented under 'Project / batch artifacts'",
             "every returned path is relative, uses forward slashes and begins with the validated project id",
-            "an empty, absolute, dot-segment, separator-containing or whitespace-only project id raises ValueError",
+            "an empty, absolute, dot-segment, separator-containing or whitespace-only project id returns an empty dict",
             "the function performs no filesystem access and the same input always returns the same dict",
             "repository-native tests cover the layout and every rejection case, and no existing speech behavior changes",
             "Canonical preflight, required CI checks and review must pass at the exact head; no gate may be weakened."
