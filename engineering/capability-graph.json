@@ -72,12 +72,13 @@
         {
           "id": "s2-singing-project-layout",
           "state": "PLANNED",
-          "objective": "Add backend/services/singing_project.py: a typed model of the documented singing project layout (source/, analysis/, voice/, renders/, metadata/, logs/ with the named files) and a function that creates it under a given root and returns the typed paths, rejecting any project id that could escape the root.",
+          "objective": "Add backend/services/singing_project.py with one pure function, singing_project_paths(project_id: str) -> dict[str, str], returning the documented singing project layout as relative POSIX paths (source/, analysis/, voice/, renders/, metadata/, logs/ and the named artifact files) and rejecting any project id that is empty, absolute or could escape the project root. The function touches no filesystem; creating the directories is a later slice.",
           "acceptance": [
-            "the layout lists exactly the directories and artifact file names documented under 'Project / batch artifacts'",
-            "creating a project is idempotent and returns the same typed paths on repeat calls",
-            "an empty, absolute or path-traversing project id is rejected and nothing is created outside the root",
-            "repository-native tests cover the layout, idempotence and rejection cases, and no existing speech behavior changes",
+            "the returned paths match exactly the directories and artifact file names documented under 'Project / batch artifacts'",
+            "every returned path is relative, uses forward slashes and begins with the validated project id",
+            "an empty, absolute, dot-segment, separator-containing or whitespace-only project id raises ValueError",
+            "the function performs no filesystem access and the same input always returns the same dict",
+            "repository-native tests cover the layout and every rejection case, and no existing speech behavior changes",
             "Canonical preflight, required CI checks and review must pass at the exact head; no gate may be weakened."
           ],
           "allowed_paths": [
