@@ -14,7 +14,7 @@ Electron publication uses these GitHub Actions secrets:
 - `ELECTRON_WINDOWS_CSC_LINK` and `ELECTRON_WINDOWS_CSC_KEY_PASSWORD` for
   Windows Authenticode signing. The macOS certificate cannot sign Windows apps.
 - The repository `GITHUB_TOKEN` for draft creation and asset uploads.
-- `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` for the Docker Hub mirror.
+- No Docker registry credentials are used: `docker.yml` is build-only (see "Container images" below).
 
 The archived `TAURI_SIGNING_PRIVATE_KEY*` secrets are retained only so the final
 Tauri release can be audited. Do not use `.github/workflows/release.yml` for a new
@@ -93,13 +93,19 @@ After publication, verify each maintained channel:
 | Channel | Workflow | Verification |
 |---|---|---|
 | GitHub Release | `electron-release.yml` | Four platform targets, updater feeds, checksums, CHANGELOG notes, retained v0.5.3 Tauri feeds |
-| GHCR CUDA | `docker.yml` | `:X.Y.Z`, `:X.Y`, `:stable` manifests |
-| GHCR ROCm | `docker.yml` | `:X.Y.Z-rocm`, `:X.Y-rocm`, `:stable-rocm` manifests |
-| Docker Hub | `docker.yml` | Matching CUDA/ROCm tags |
-| Docker Hub overview | `docker.yml` | Read the `Update Docker Hub description` step log; the step may continue after a 403 |
-| Rolling containers | `docker.yml` on `main` | `:latest`, `:main`, and `:rocm` timestamps move |
+| Docker images (CUDA and ROCm) | `docker.yml` | Build verification only: both `build-cuda` and `build-rocm` jobs pass. Nothing is published |
 
-A missing channel is a release bug. There are no RC tags; previews source from
+A missing desktop channel is a release bug. Container publication is not a channel of this fork (see below).
+
+### Container images
+
+`docker.yml` verifies that the CUDA and ROCm images build; it does not publish. It used to push to the original
+project's registries (`ghcr.io/debpalash/...`, `docker.io/palashdeb/...`), which this repository cannot write to, so
+those destinations, the registry logins, the release backfill and the Docker Hub overview sync were removed. The
+`ghcr.io/debpalash/voicestudio` images named in the install docs are the upstream project's own published images.
+Publishing to `ghcr.io/jweter/voicestudio` is a separate, reviewed change that must first create and verify the
+package and workflow permissions, then add `packages: write`, a GHCR login and `push: true` for that one destination,
+and update `tests/test_published_image_path_is_pinned.py`, which currently forbids any publishing. There are no RC tags; previews source from
 `main`, never a side branch. The Electron artifact workflow is the desktop
 rehearsal channel; no Tauri or desktop-preview build is maintained.
 
