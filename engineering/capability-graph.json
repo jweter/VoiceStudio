@@ -5,7 +5,7 @@
     {
       "id": "singing-s1-capability-schema",
       "capability": "S1 - Singing engine capability schema + catalogue filtering.",
-      "state": "PLANNED",
+      "state": "VERIFIED_COMPLETE",
       "completion_evidence": [
         "docs/projects/singing-mode.md S1 checklist state",
         "automated repository contract/preflight evidence on the implementation head"
@@ -14,7 +14,7 @@
       "slices": [
         {
           "id": "s1-capability-schema-catalogue-filtering",
-          "state": "PLANNED",
+          "state": "VERIFIED_COMPLETE",
           "objective": "Implement the explicitly documented S1 Singing engine capability schema and catalogue filtering so singing compatibility is represented independently from ordinary TTS cloning support.",
           "acceptance": [
             "Singing capability flags are represented explicitly in the engine/model schema.",
@@ -42,12 +42,64 @@
             "windows",
             "offline"
           ],
-          "runtime_requirements": []
+          "runtime_requirements": [],
+          "verification": [
+            "backend/services/tts_backend.py SINGING_CAPABILITY_NAMES, per-engine singing_capabilities, list_backends(singing_capability=...)",
+            "backend/api/routers/engines.py /engines/tts?singing_capability=",
+            "tests/backend/services/test_tts_backend_registry.py::test_singing_capabilities_are_explicit_and_filterable and ::test_existing_speech_engines_do_not_implicitly_support_singing",
+            "CI success on main 6798bbd5"
+          ]
+        }
+      ],
+      "verification": [
+        "backend/services/tts_backend.py SINGING_CAPABILITY_NAMES, per-engine singing_capabilities, list_backends(singing_capability=...)",
+        "backend/api/routers/engines.py /engines/tts?singing_capability=",
+        "tests/backend/services/test_tts_backend_registry.py::test_singing_capabilities_are_explicit_and_filterable and ::test_existing_speech_engines_do_not_implicitly_support_singing",
+        "CI success on main 6798bbd5"
+      ]
+    },
+    {
+      "id": "singing-s2-project-model",
+      "state": "PLANNED",
+      "depends_on": [
+        "singing-s1-capability-schema"
+      ],
+      "capability": "S2 - Singing project/input data model: the documented on-disk project layout for a singing job, created safely and deterministically.",
+      "completion_evidence": [
+        "docs/projects/singing-mode.md S2 checklist state and the 'Project / batch artifacts' layout"
+      ],
+      "slices": [
+        {
+          "id": "s2-singing-project-layout",
+          "state": "PLANNED",
+          "objective": "Add backend/services/singing_project.py with one pure function, singing_project_paths(project_id: str) -> dict[str, str], returning the documented singing project layout as relative POSIX paths (source/, analysis/, voice/, renders/, metadata/, logs/ and the named artifact files) and returning an empty dict for any project id that is empty, whitespace-only, absolute or could escape the project root (the function is total and never raises). The function touches no filesystem; creating the directories is a later slice.",
+          "acceptance": [
+            "the returned paths match exactly the directories and artifact file names documented under 'Project / batch artifacts'",
+            "every returned path is relative, uses forward slashes and begins with the validated project id",
+            "an empty, absolute, dot-segment, separator-containing or whitespace-only project id returns an empty dict",
+            "the function performs no filesystem access and the same input always returns the same dict",
+            "repository-native tests cover the layout and every rejection case, and no existing speech behavior changes",
+            "Canonical preflight, required CI checks and review must pass at the exact head; no gate may be weakened."
+          ],
+          "allowed_paths": [
+            "backend/services/singing_project.py",
+            "tests/backend/services/test_singing_project.py",
+            "docs/projects/singing-mode.md"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ],
+          "capability_level": 1
         }
       ]
     }
   ],
   "roadmap": [
-    "singing-s1-capability-schema"
+    "singing-s2-project-model"
   ]
 }
