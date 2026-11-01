@@ -94,7 +94,43 @@
             "**/*.key",
             "engineering/**"
           ],
-          "capability_level": 1
+          "capability_level": 1,
+          "acceptance_examples": [
+            {
+              "call": "{fn}('demo')",
+              "expected": {
+                "source_dir": "demo/source",
+                "analysis_dir": "demo/analysis",
+                "voice_dir": "demo/voice",
+                "renders_dir": "demo/renders",
+                "metadata_dir": "demo/metadata",
+                "logs_dir": "demo/logs",
+                "f0": "demo/analysis/f0.json",
+                "segments": "demo/analysis/segments.json",
+                "lyric_alignment": "demo/analysis/lyric_alignment.json",
+                "target_voice": "demo/voice/target_voice.json",
+                "preview": "demo/renders/preview.wav",
+                "vocal_full": "demo/renders/vocal_full.wav",
+                "generation": "demo/metadata/generation.json"
+              },
+              "why": "a valid id yields all 13 documented paths prefixed with 'demo/'"
+            },
+            {
+              "call": "{fn}('')",
+              "expected": {},
+              "why": "an empty project id is invalid, so the result is empty"
+            },
+            {
+              "call": "{fn}('../escape')",
+              "expected": {},
+              "why": "dot segments could leave the project root, so the result is empty"
+            },
+            {
+              "call": "{fn}('a/b')",
+              "expected": {},
+              "why": "a path separator is not an allowed character, so the result is empty"
+            }
+          ]
         }
       ]
     }
