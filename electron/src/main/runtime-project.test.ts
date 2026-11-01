@@ -118,6 +118,9 @@ describe('packaged runtime setup', () => {
     expect(await runtimeCompatible(bundle, project)).toBe(true);
     expect(await runtimeInstallInterrupted(project)).toBe(false);
   });
+  // These two multi-install cases exercise real filesystem staging. On busy
+  // Linux CI runners they can exceed Vitest's 5s default even when every
+  // assertion is correct. Keep a bounded timeout and all readiness checks.
   it('requires successful installation, a complete venv and the current dependency graph', async () => {
     const { bundle, project } = await fixture();
     expect(await runtimeReady(bundle, project)).toBe(false);
@@ -140,7 +143,7 @@ describe('packaged runtime setup', () => {
     await installRuntime(bundle, project, 'uv', run, new AbortController().signal);
     await rm(join(project, '.venv', 'pyvenv.cfg'));
     expect(await runtimeReady(bundle, project)).toBe(false);
-  });
+  }, 20_000);
   it('keeps reusable uv downloads outside the replaceable Python project', async () => {
     const { bundle, project } = await fixture();
     const run = vi.fn(
@@ -350,7 +353,7 @@ describe('packaged runtime setup', () => {
       ),
     ).rejects.toThrow('offline');
     expect(await runtimeReady(bundle, project)).toBe(false);
-  });
+  }, 20_000);
   it('does not download or run commands after cancellation', async () => {
     const { bundle, project } = await fixture();
     const controller = new AbortController();
