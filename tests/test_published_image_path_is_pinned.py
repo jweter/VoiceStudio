@@ -1,6 +1,13 @@
-"""Keep the canonical and compatibility GHCR coordinates in one tag stream."""
+"""Pin the Docker workflow contract: image BUILD verification only, and no publishing to anyone else's registry.
+
+History: the workflow used to push to the original author's registries (ghcr.io/debpalash/..., docker.io/palashdeb/...)
+and failed on every push with permission_denied. It is now build-only. These tests keep that from regressing, keep the
+CUDA and ROCm builds verified, and require publishing to this repository's own registry to be a deliberate, reviewed
+change (it must update these tests) rather than something that creeps back in.
+"""
 
 import os
+import re
 
 import pytest
 
@@ -10,53 +17,83 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WORKFLOW = os.path.join(ROOT, ".github", "workflows", "docker.yml")
 
 
-def _env():
+def _text():
     with open(WORKFLOW, encoding="utf-8") as fh:
-        return yaml.safe_load(fh)["env"]
+        return fh.read()
 
 
-def test_the_ghcr_paths_are_explicit_and_keep_the_legacy_alias():
-    env = _env()
-    assert env["IMAGE_NAME"] == "debpalash/voicestudio"
-    assert env["LEGACY_IMAGE_NAME"] == "debpalash/omnivoice-studio"
-    assert "github.repository" not in str(env)
+def _code():
+    """The workflow without comment lines: comments may NAME what was removed, configuration may not use it."""
+    return "\n".join(line for line in _text().splitlines() if not line.lstrip().startswith("#"))
 
 
-def test_release_backfills_require_an_actual_git_tag():
-    workflow = open(WORKFLOW, encoding="utf-8").read()
-    assert workflow.count('git rev-parse "refs/tags/${RELEASE_REF}^{commit}"') == 2
-    assert 'git rev-parse "${RELEASE_REF}^{commit}"' not in workflow
+def _workflow():
+    return yaml.safe_load(_text())
 
 
-def test_both_ghcr_paths_are_published_by_both_builds():
-    text = open(WORKFLOW, encoding="utf-8").read()
-    assert text.count("${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}") == 2
-    assert text.count("${{ env.REGISTRY }}/${{ env.LEGACY_IMAGE_NAME }}") == 2
+def _steps(job):
+    return _workflow()["jobs"][job]["steps"]
 
 
-def test_current_release_tags_are_backfilled_for_both_gpu_flavors():
-    text = open(WORKFLOW, encoding="utf-8").read()
-    assert text.count('[[ "$RELEASE_REF" =~ ^v[0-9]+\\.[0-9]+\\.[0-9]+$ ]]') == 2
-    assert text.count('${RELEASE_REF}^{commit}') == 2
-    assert text.count('VERSION="${RELEASE_REF#v}"') == 4
-    assert text.count("test \"$PACKAGE_VERSION\" = '1.0.0'") == 2
-    assert text.count('test "$PACKAGE_VERSION" = "$TAG_VERSION"') == 2
-    assert text.count('if [[ "$PROMOTE_STABLE" == "true" ]]') == 2
-    assert text.count("docker buildx imagetools create") == 4
+def _build_step(job):
+    return next(s for s in _steps(job) if str(s.get("uses", "")).startswith("docker/build-push-action"))
+
+
+def test_the_workflow_cannot_publish_anywhere():
+    text = _code()
+    workflow = _workflow()
+    # permissions: read-only token, no package write.
+    assert workflow["permissions"] == {"contents": "read"}
+    assert "packages: write" not in text
+    # No registry login, no secrets, no push.
+    assert not any(str(s.get("uses", "")).startswith("docker/login-action") for job in workflow["jobs"].values()
+                   for s in job["steps"])
+    assert "secrets." not in text.replace("GITHUB_TOKEN", "")
+    assert re.search(r"push:\s*true", text) is None
+    for job in workflow["jobs"]:
+        assert _build_step(job)["with"]["push"] is False
+
+
+def test_no_upstream_registry_destinations_remain():
+    code = _code()
+    for forbidden in ("debpalash", "palashdeb", "ghcr.io", "docker.io", "hub.docker.com", "imagetools"):
+        assert forbidden not in code, f"docker.yml still references {forbidden}"
+
+
+def test_cuda_and_rocm_image_builds_are_both_verified():
+    workflow = _workflow()
+    assert set(workflow["jobs"]) == {"build-cuda", "build-rocm"}
+    for job in workflow["jobs"]:
+        assert _build_step(job)["with"]["file"] == "deploy/Dockerfile"
+    rocm = _build_step("build-rocm")["with"]["build-args"]
+    assert "BASE_IMAGE=rocm/pytorch:" in rocm and "GPU_FLAVOR=rocm" in rocm
+    assert "build-args" not in _build_step("build-cuda")["with"]
+
+
+def test_the_two_builds_keep_the_same_disk_reclaim_list():
+    def reclaim(job):
+        step = next(s for s in _steps(job) if s.get("name") == "Free runner disk space")
+        return step["run"]
+
+    assert reclaim("build-cuda") == reclaim("build-rocm")
+    assert "docker image prune --all --force" in reclaim("build-cuda")
+
+
+def test_the_workflow_runs_on_the_files_that_define_the_images():
+    on = _workflow()[True] if True in _workflow() else _workflow()["on"]
+    assert on["pull_request"]["paths"] == ["deploy/**", ".github/workflows/docker.yml"]
+    assert "main" in on["push"]["branches"] and "v*" in on["push"]["tags"]
 
 
 def test_sha_tags_follow_the_checked_out_source_commit():
-    text = open(WORKFLOW, encoding="utf-8").read()
+    text = _text()
     assert text.count("git rev-parse --short=7 HEAD") == 2
     assert "type=sha" not in text
     assert "GITHUB_SHA::7" not in text
 
 
-def test_docker_hub_keeps_its_existing_coordinate():
-    assert _env()["DOCKERHUB_IMAGE"] == "palashdeb/omnivoice-studio"
-
-
-def test_active_templates_use_the_canonical_public_path():
+def test_active_templates_still_use_the_documented_public_image_path():
+    """Templates and docs consume the upstream project's published images; that is unchanged and not publishing."""
     canonical = "ghcr.io/debpalash/voicestudio"
     for rel in (
         "deploy/docker-compose.yml",
@@ -65,20 +102,4 @@ def test_active_templates_use_the_canonical_public_path():
         "electron/src/renderer/src/features/integrations/setup-registry.ts",
     ):
         text = open(os.path.join(ROOT, rel), encoding="utf-8").read()
-        assert canonical in text, f"{rel} does not use the canonical GHCR path"
-
-
-def test_the_docs_name_the_path_that_is_actually_published():
-    """Docs drift here is invisible: a wrong pull command fails only for users."""
-    env = _env()
-    published = f"ghcr.io/{env['IMAGE_NAME']}"
-    legacy = f"ghcr.io/{env['LEGACY_IMAGE_NAME']}"
-    for rel in ("docs/install/docker.md", "deploy/dockerhub-overview.md"):
-        path = os.path.join(ROOT, rel)
-        if not os.path.isfile(path):
-            continue
-        text = open(path, encoding="utf-8").read()
-        if "ghcr.io/" not in text:
-            continue
-        assert published in text, f"{rel} does not document {published}"
-        assert legacy in text, f"{rel} does not document compatibility alias {legacy}"
+        assert canonical in text, f"{rel} does not use the documented GHCR path"
