@@ -93,7 +93,8 @@
             "**/*.pem",
             "**/*.key",
             "engineering/**"
-          ]
+          ],
+          "capability_level": 1
         }
       ]
     }
