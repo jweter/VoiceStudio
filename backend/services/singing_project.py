@@ -31,15 +31,22 @@ _LAYOUT: dict[str, str] = {
 }
 
 
+# Separators of either kind, NUL, and the characters Windows forbids in a name.  ":" matters most: it
+# makes drive-qualified ids ("C:", "C:..") that discard the projects directory when joined, and
+# NTFS alternate-stream names ("demo:stream").
+_FORBIDDEN_CHARS = frozenset('/\\\x00:*?"<>|')
+
+
 def _is_valid_project_id(project_id: object) -> bool:
-    """A project id is one plain path segment: no separators, no dot segments, no blanks."""
+    """A project id is one plain path segment on every platform: no separators, drive or stream marks, dot segments or blanks."""
     if not isinstance(project_id, str):
         return False
     if not project_id or project_id != project_id.strip():
         return False
-    if "/" in project_id or "\\" in project_id or "\x00" in project_id:
+    if any(char in project_id for char in _FORBIDDEN_CHARS):
         return False
-    return project_id not in {".", ".."}
+    # Windows strips trailing dots, so "demo." would alias "demo" and "..." could mean "..".
+    return not project_id.endswith(".")
 
 
 def singing_project_paths(project_id: str) -> dict[str, str]:
@@ -47,8 +54,10 @@ def singing_project_paths(project_id: str) -> dict[str, str]:
 
     Every path starts with ``project_id`` and uses ``/`` separators on every
     platform.  An invalid ``project_id`` (empty, blank, padded with whitespace,
-    ``.``/``..``, containing a path separator or NUL, or not a string) yields an
-    empty dict, so a caller can never build a path that escapes the project.
+    ending in ``.`` -- which covers ``.`` and ``..`` -- containing a path
+    separator, ``:`` or another character Windows forbids in names, or not a
+    string) yields an empty dict, so a caller can never build a path that
+    escapes the projects root.
     """
     if not _is_valid_project_id(project_id):
         return {}

@@ -45,7 +45,9 @@ def test_entries_are_sorted_by_name() -> None:
 @pytest.mark.parametrize(
     "bad",
     ["", " ", "   ", " demo", "demo ", "\tdemo", ".", "..", "../escape", "a/b", "/abs", "absolute/path",
-     "a\\b", "..\\escape", "C:\\x", "de\x00mo"],
+     "a\\b", "..\\escape", "C:\\x", "de\x00mo",
+     # Windows: drive-qualified / drive-relative ids escape the projects root when joined; "demo." aliases "demo".
+     "C:", "C:..", "c:demo", "demo:stream", "...", "demo.", "a*b", "a?b", 'a"b', "a<b", "a>b", "a|b"],
 )
 def test_invalid_project_ids_give_an_empty_layout(bad: str) -> None:
     assert singing_project_paths(bad) == {}
