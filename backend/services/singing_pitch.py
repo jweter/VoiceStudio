@@ -144,3 +144,102 @@ def extract_f0(
         else:
             frames.append(F0Frame(time_seconds, sample_rate / lag, True, confidence))
     return F0Track(sample_rate, hop_samples, tuple(frames))
+
+
+# --- accuracy measurement (singing-mode S3: "F0 error in cents, voiced/unvoiced agreement, octave-error rate") ---------
+
+@dataclass(frozen=True)
+class ReferenceNote:
+    """Ground truth for a golden fixture: ``frequency_hz`` of None means silence/unvoiced for the interval."""
+
+    start_seconds: float
+    end_seconds: float
+    frequency_hz: float | None
+
+    def __post_init__(self) -> None:
+        if not (math.isfinite(self.start_seconds) and math.isfinite(self.end_seconds)) or not 0 <= self.start_seconds < self.end_seconds:
+            raise ValueError("reference interval must be finite with 0 <= start < end")
+        if self.frequency_hz is not None and (not math.isfinite(self.frequency_hz) or self.frequency_hz <= 0):
+            raise ValueError("reference frequency_hz must be positive and finite, or None")
+
+
+@dataclass(frozen=True)
+class F0Evaluation:
+    frames_evaluated: int
+    voiced_agreement: float
+    median_abs_cents: float | None
+    p95_abs_cents: float | None
+    octave_error_rate: float | None
+
+
+def cents(measured_hz: float, reference_hz: float) -> float:
+    """Signed pitch error in cents (+ = measured is sharp)."""
+    if not (math.isfinite(measured_hz) and math.isfinite(reference_hz)) or measured_hz <= 0 or reference_hz <= 0:
+        raise ValueError("frequencies must be positive and finite")
+    return 1200.0 * math.log2(measured_hz / reference_hz)
+
+
+def _reference_at(notes: tuple[ReferenceNote, ...], time_seconds: float) -> tuple[bool, ReferenceNote | None]:
+    for note in notes:
+        if note.start_seconds <= time_seconds < note.end_seconds:
+            return True, note
+    return False, None
+
+
+def evaluate_f0(track: F0Track, reference: tuple[ReferenceNote, ...] | list[ReferenceNote], *,
+                edge_guard_seconds: float = 0.0, octave_tolerance_cents: float = 100.0) -> F0Evaluation:
+    """Score a track against known notes. Frames not covered by the reference, or within ``edge_guard_seconds``
+    of a reference boundary (where any windowed analyzer is legitimately ambiguous), are not scored."""
+    notes = tuple(reference)
+    if not math.isfinite(edge_guard_seconds) or edge_guard_seconds < 0:
+        raise ValueError("edge_guard_seconds must be finite and non-negative")
+    agree = 0
+    scored = 0
+    errors: list[float] = []
+    octave = 0
+    for frame in track.frames:
+        covered, note = _reference_at(notes, frame.time_seconds)
+        if not covered or note is None:
+            continue
+        if min(frame.time_seconds - note.start_seconds, note.end_seconds - frame.time_seconds) < edge_guard_seconds:
+            continue
+        scored += 1
+        expected_voiced = note.frequency_hz is not None
+        agree += frame.voiced == expected_voiced
+        if frame.voiced and expected_voiced and frame.frequency_hz is not None and note.frequency_hz is not None:
+            error = cents(frame.frequency_hz, note.frequency_hz)
+            errors.append(abs(error))
+            octave += abs(abs(error) - 1200.0) <= octave_tolerance_cents
+    if scored == 0:
+        raise ValueError("no frames fall inside the reference")
+    ordered = sorted(errors)
+    return F0Evaluation(
+        frames_evaluated=scored,
+        voiced_agreement=agree / scored,
+        median_abs_cents=float(np.median(ordered)) if ordered else None,
+        p95_abs_cents=float(ordered[min(len(ordered) - 1, math.ceil(0.95 * len(ordered)) - 1)]) if ordered else None,
+        octave_error_rate=octave / len(ordered) if ordered else None,
+    )
+
+
+def voiced_segments(track: F0Track, *, min_frames: int = 1) -> tuple[tuple[float, float], ...]:
+    """Contiguous voiced runs as (start_seconds, end_seconds); the end is the first non-voiced frame (or one hop past the last)."""
+    if type(min_frames) is not int or min_frames < 1:
+        raise ValueError("min_frames must be a positive integer")
+    hop = track.hop_samples / track.sample_rate
+    runs: list[tuple[float, float]] = []
+    start: float | None = None
+    count = 0
+    for frame in track.frames:
+        if frame.voiced:
+            if start is None:
+                start, count = frame.time_seconds, 0
+            count += 1
+            end = frame.time_seconds + hop
+        elif start is not None:
+            if count >= min_frames:
+                runs.append((start, frame.time_seconds))
+            start = None
+    if start is not None and count >= min_frames:
+        runs.append((start, end))
+    return tuple(runs)

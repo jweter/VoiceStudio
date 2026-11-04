@@ -322,7 +322,7 @@ Only after deterministic checks pass:
 - [x] S0 — Architecture decision: singing as separate engine capability. See `docs/adr/ADR-SING-001-separate-singing-capability.md`.
 - [x] S1 — Singing engine capability schema + catalogue filtering.
 - [x] S2 — Singing project/input data model.
-- [ ] S3 — F0/pitch-analysis service with golden fixtures.
+- [x] S3 — F0/pitch-analysis service with golden fixtures (cents error, voiced/unvoiced agreement, octave-error rate, voiced segments; fixtures are synthesized in code).
 - [ ] S4 — First local singing voice-conversion adapter.
 - [ ] S5 — Singing workspace: guide vocal + target voice + preview.
 - [ ] S6 — A/B playback + pitch comparison.
