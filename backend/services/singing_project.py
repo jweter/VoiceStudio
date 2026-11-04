@@ -50,7 +50,8 @@ def _is_valid_project_id(project_id: object) -> bool:
         return False
     if not project_id or project_id != project_id.strip():
         return False
-    if any(char in project_id for char in _FORBIDDEN_CHARS):
+    # Control characters are refused everywhere: Windows rejects them in names, Linux would accept them.
+    if any(char in _FORBIDDEN_CHARS or ord(char) < 32 or ord(char) == 127 for char in project_id):
         return False
     # Windows strips trailing dots, so "demo." would alias "demo" and "..." could mean "..".
     return not project_id.endswith(".")

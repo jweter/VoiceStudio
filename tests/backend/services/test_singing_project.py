@@ -48,7 +48,9 @@ def test_entries_are_sorted_by_name() -> None:
     ["", " ", "   ", " demo", "demo ", "\tdemo", ".", "..", "../escape", "a/b", "/abs", "absolute/path",
      "a\\b", "..\\escape", "C:\\x", "de\x00mo",
      # Windows: drive-qualified / drive-relative ids escape the projects root when joined; "demo." aliases "demo".
-     "C:", "C:..", "c:demo", "demo:stream", "...", "demo.", "a*b", "a?b", 'a"b', "a<b", "a>b", "a|b"],
+     "C:", "C:..", "c:demo", "demo:stream", "...", "demo.", "a*b", "a?b", 'a"b', "a<b", "a>b", "a|b",
+     # Control characters: Windows refuses them in names, Linux accepts them, so reject them everywhere.
+     "a\x08b", "a\tb", "a\nb", "a\rb", "a\x1fb", "a\x7fb"],
 )
 def test_invalid_project_ids_give_an_empty_layout(bad: str) -> None:
     assert singing_project_paths(bad) == {}
@@ -115,7 +117,7 @@ def test_create_completes_a_partial_project(tmp_path: Path) -> None:
     assert _tree(tmp_path) == ["demo", *(f"demo/{d}" for d in DIRS)]
 
 
-@pytest.mark.parametrize("bad", ["", " ", "..", "../escape", "a/b", "C:", "a\b"])
+@pytest.mark.parametrize("bad", ["", " ", "..", "../escape", "a/b", "C:", "a\\b", "a\x08b"])
 def test_create_refuses_invalid_ids_and_creates_nothing(tmp_path: Path, bad: str) -> None:
     assert create_singing_project(tmp_path, bad) == {}
     assert _tree(tmp_path) == []
