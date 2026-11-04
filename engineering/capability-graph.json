@@ -60,7 +60,7 @@
     },
     {
       "id": "singing-s2-project-model",
-      "state": "PLANNED",
+      "state": "VERIFIED_COMPLETE",
       "depends_on": [
         "singing-s1-capability-schema"
       ],
@@ -71,7 +71,7 @@
       "slices": [
         {
           "id": "s2-singing-project-layout",
-          "state": "PLANNED",
+          "state": "VERIFIED_COMPLETE",
           "objective": "Add backend/services/singing_project.py with one pure function, singing_project_paths(project_id: str) -> dict[str, str], returning the documented singing project layout as relative POSIX paths (source/, analysis/, voice/, renders/, metadata/, logs/ and the named artifact files) and returning an empty dict for any project id that is empty, whitespace-only, absolute or could escape the project root (the function is total and never raises). The function touches no filesystem; creating the directories is a later slice.",
           "acceptance": [
             "the returned paths match exactly the directories and artifact file names documented under 'Project / batch artifacts'",
@@ -131,7 +131,39 @@
               "why": "a path separator is not an allowed character, so the result is empty"
             }
           ]
+        },
+        {
+          "id": "s2-singing-project-create",
+          "state": "VERIFIED_COMPLETE",
+          "objective": "Add create_singing_project(root, project_id) to backend/services/singing_project.py: create the six documented directories of a singing project below an existing root and return singing_project_paths(project_id); idempotent, additive, writes no files, refuses invalid ids, a missing or non-directory root, and any file or symlink occupying a project path, creating nothing in those cases.",
+          "acceptance": [
+            "exactly source/, analysis/, voice/, renders/, metadata/ and logs/ are created under root/project_id and no file is written",
+            "calling it again leaves existing content untouched and returns the same layout",
+            "invalid ids, a missing or non-directory root, and a file or symlink at any project path return an empty dict and create nothing new",
+            "repository-native tests cover each case; no existing speech behavior changes"
+          ],
+          "allowed_paths": [
+            "backend/services/singing_project.py",
+            "tests/backend/services/test_singing_project.py",
+            "docs/projects/singing-mode.md",
+            "engineering/capability-graph.json"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ],
+          "capability_level": 1
         }
+      ],
+      "verification": [
+        "backend/services/singing_project.py singing_project_paths and create_singing_project",
+        "tests/backend/services/test_singing_project.py (layout, rejection cases incl. Windows drive-qualified ids, creation, idempotence, symlink and file refusal)",
+        "tests/test_structure_doc.py service count 92",
+        "CI success on main c73b65b (layout slice, PR #20); CI success on the exact head of the create-slice PR"
       ]
     }
   ],

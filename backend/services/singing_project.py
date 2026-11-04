@@ -1,8 +1,9 @@
 """Layout of a singing project, as relative POSIX paths.
 
-A singing project is a directory named by its project id.  This module only
-*describes* where things live; it never touches the filesystem and imports only
-the standard library, so the layout can be tested and reused anywhere.
+A singing project is a directory named by its project id.  ``singing_project_paths``
+only *describes* where things live and never touches the filesystem;
+``create_singing_project`` makes the project's directories (and nothing else).
+The module imports only the standard library.
 
 The layout is the one documented for Singing Mode: ``source`` holds the guide
 vocal, ``voice`` the target voice reference, ``analysis`` the derived pitch /
@@ -11,6 +12,8 @@ outputs and ``logs`` the run logs.
 """
 
 from __future__ import annotations
+
+from pathlib import Path
 
 # Entry name -> path below the project directory.  Sorted by name on purpose:
 # the returned mapping has a stable, reviewable order.
@@ -29,6 +32,10 @@ _LAYOUT: dict[str, str] = {
     "vocal_full": "renders/vocal_full.wav",
     "voice_dir": "voice",
 }
+
+
+# The directory entries of the layout, parents before children, in creation order.
+_DIRECTORY_ENTRIES = ("source_dir", "analysis_dir", "voice_dir", "renders_dir", "metadata_dir", "logs_dir")
 
 
 # Separators of either kind, NUL, and the characters Windows forbids in a name.  ":" matters most: it
@@ -62,3 +69,41 @@ def singing_project_paths(project_id: str) -> dict[str, str]:
     if not _is_valid_project_id(project_id):
         return {}
     return {name: f"{project_id}/{relative}" for name, relative in _LAYOUT.items()}
+
+
+def create_singing_project(root: Path | str, project_id: str) -> dict[str, str]:
+    """Create the directories of a singing project below ``root`` and return its layout.
+
+    Returns ``singing_project_paths(project_id)`` once ``source/``, ``analysis/``, ``voice/``,
+    ``renders/``, ``metadata/`` and ``logs/`` exist under ``root / project_id``.  It is idempotent and
+    additive: it never writes a file, never deletes or replaces anything, and leaves existing content
+    alone.  It returns ``{}`` and creates nothing when
+
+    * ``project_id`` is invalid (see ``singing_project_paths``);
+    * ``root`` is not an existing directory (the projects root is never created here);
+    * the project directory, or any of its directories, already exists as something other than a real
+      directory (a file or a symlink), so a link can never redirect the project outside ``root``;
+    * the filesystem refuses (``OSError``).
+
+    All the checks above run before the first directory is created, so a refusal by them leaves nothing
+    behind.  (An ``OSError`` while creating can still leave the directories made before it; they are
+    plain empty directories and a retry completes them.)  A symlinked ``root`` is accepted: it is the
+    caller's chosen location, and only links *inside* the project are refused.
+    """
+    layout = singing_project_paths(project_id)
+    if not layout:
+        return {}
+    try:
+        base = Path(root)
+        if not base.is_dir():
+            return {}
+        project = base / project_id
+        directories = [project, *(base / layout[name] for name in _DIRECTORY_ENTRIES)]
+        for directory in directories:
+            if directory.is_symlink() or (directory.exists() and not directory.is_dir()):
+                return {}
+        for directory in directories:
+            directory.mkdir(exist_ok=True)
+    except OSError:
+        return {}
+    return layout

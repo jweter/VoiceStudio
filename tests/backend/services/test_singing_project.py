@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import ast
+import os
 import sys
 from pathlib import Path
 
 import pytest
 
-from services.singing_project import singing_project_paths
+from services.singing_project import create_singing_project, singing_project_paths
 
 DEMO = {
     "analysis_dir": "demo/analysis",
@@ -80,3 +81,93 @@ def test_module_imports_only_the_standard_library() -> None:
         for alias in (node.names if isinstance(node, ast.Import) else [None])
     }
     assert roots <= set(sys.stdlib_module_names)
+
+
+DIRS = ["analysis", "logs", "metadata", "renders", "source", "voice"]
+
+
+def _tree(root: Path) -> list[str]:
+    return sorted(p.relative_to(root).as_posix() for p in root.rglob("*"))
+
+
+def test_create_makes_exactly_the_six_directories_and_no_files(tmp_path: Path) -> None:
+    assert create_singing_project(tmp_path, "demo") == DEMO
+    assert _tree(tmp_path) == ["demo", *(f"demo/{d}" for d in DIRS)]
+    assert all(p.is_dir() for p in tmp_path.rglob("*"))
+
+
+def test_create_accepts_a_str_root_and_returns_the_same_layout(tmp_path: Path) -> None:
+    assert create_singing_project(str(tmp_path), "demo") == singing_project_paths("demo")
+
+
+def test_create_is_idempotent_and_leaves_existing_content_alone(tmp_path: Path) -> None:
+    create_singing_project(tmp_path, "demo")
+    keep = tmp_path / "demo" / "source" / "guide_vocal.wav"
+    keep.write_bytes(b"audio")
+    assert create_singing_project(tmp_path, "demo") == DEMO
+    assert keep.read_bytes() == b"audio"
+    assert len(_tree(tmp_path)) == 7 + 1
+
+
+def test_create_completes_a_partial_project(tmp_path: Path) -> None:
+    (tmp_path / "demo" / "analysis").mkdir(parents=True)
+    assert create_singing_project(tmp_path, "demo") == DEMO
+    assert _tree(tmp_path) == ["demo", *(f"demo/{d}" for d in DIRS)]
+
+
+@pytest.mark.parametrize("bad", ["", " ", "..", "../escape", "a/b", "C:", "a\b"])
+def test_create_refuses_invalid_ids_and_creates_nothing(tmp_path: Path, bad: str) -> None:
+    assert create_singing_project(tmp_path, bad) == {}
+    assert _tree(tmp_path) == []
+
+
+def test_create_never_creates_the_projects_root(tmp_path: Path) -> None:
+    missing = tmp_path / "no-such-root"
+    assert create_singing_project(missing, "demo") == {}
+    assert not missing.exists()
+
+
+def test_create_refuses_a_root_that_is_a_file(tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    root.write_text("x", encoding="utf-8")
+    assert create_singing_project(root, "demo") == {}
+
+
+def test_create_refuses_when_the_project_path_is_a_file(tmp_path: Path) -> None:
+    (tmp_path / "demo").write_text("x", encoding="utf-8")
+    assert create_singing_project(tmp_path, "demo") == {}
+    assert (tmp_path / "demo").read_text(encoding="utf-8") == "x"
+
+
+def test_a_blocked_subdirectory_leaves_nothing_new_behind(tmp_path: Path) -> None:
+    (tmp_path / "demo").mkdir()
+    (tmp_path / "demo" / "voice").write_text("x", encoding="utf-8")
+    assert create_singing_project(tmp_path, "demo") == {}
+    assert _tree(tmp_path) == ["demo", "demo/voice"]
+
+
+def test_create_refuses_a_symlinked_project_directory(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    root = tmp_path / "root"
+    root.mkdir()
+    try:
+        os.symlink(outside, root / "demo", target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlinks are not available here")
+    assert create_singing_project(root, "demo") == {}
+    assert list(outside.iterdir()) == []
+
+
+def test_create_refuses_a_symlinked_subdirectory(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    root = tmp_path / "root"
+    (root / "demo").mkdir(parents=True)
+    try:
+        os.symlink(outside, root / "demo" / "renders", target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlinks are not available here")
+    assert create_singing_project(root, "demo") == {}
+    assert list(outside.iterdir()) == []
+    assert sorted(p.name for p in (root / "demo").iterdir()) == ["renders"]
