@@ -165,9 +165,166 @@
         "tests/test_structure_doc.py service count 92",
         "CI success on main c73b65b (layout slice, PR #20); CI success on the exact head of the create-slice PR"
       ]
+    },
+    {
+      "id": "singing-s3-pitch-analysis",
+      "capability": "S3 - F0/pitch-analysis service with golden fixtures: deterministic pitch extraction scored by cents error, voiced/unvoiced agreement and octave-error rate.",
+      "state": "VERIFIED_COMPLETE",
+      "depends_on": [
+        "singing-s2-project-model"
+      ],
+      "completion_evidence": [
+        "docs/projects/singing-mode.md S3 checklist state and the 'Golden audio tests' strategy"
+      ],
+      "verification": [
+        "backend/services/singing_pitch.py extract_f0, evaluate_f0, voiced_segments, cents, ReferenceNote",
+        "tests/backend/services/test_singing_pitch_golden.py (synthesized three-note melody: median 7.8 cents, p95 19 cents, 0 octave errors; noise and silence unvoiced; octave-slip case; determinism; invalid input)",
+        "VoiceStudio PR #22 merged as 9f88162; every required check (tests, smoke on 4 platforms, CodeQL, bandit, gitleaks) green at its exact head d895c14"
+      ],
+      "slices": [
+        {
+          "id": "s3-f0-golden-fixtures",
+          "state": "VERIFIED_COMPLETE",
+          "capability_level": 3,
+          "objective": "Add F0 accuracy metrics and deterministic golden fixtures for the existing F0 extractor.",
+          "acceptance": [
+            "median/p95 cents error, voiced agreement and octave-error rate are measured on known melodies",
+            "noise and silence are unvoiced",
+            "the measurement is deterministic and the track survives serialization"
+          ],
+          "allowed_paths": [
+            "backend/services/singing_pitch.py",
+            "tests/backend/services/test_singing_pitch_golden.py",
+            "docs/projects/singing-mode.md"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "singing-s4-first-svc-adapter",
+      "capability": "S4 - First local singing voice-conversion adapter: an engine-independent adapter contract, an evidence-based choice of the first local engine (per the 'Engine research lane' in docs/projects/singing-mode.md), and one adapter behind it. Runs fully locally; never falls back to speech synthesis.",
+      "state": "PLANNED",
+      "depends_on": [
+        "singing-s3-pitch-analysis"
+      ],
+      "completion_evidence": [
+        "docs/projects/singing-mode.md S4 checklist state",
+        "an end-to-end local conversion of a short guide vocal with recorded provenance"
+      ],
+      "slices": [
+        {
+          "id": "s4-engine-evaluation",
+          "state": "PLANNED",
+          "capability_level": 3,
+          "objective": "Write docs/projects/singing-engine-evaluation.md following the 'Engine research lane' in docs/projects/singing-mode.md: for at least three open, locally runnable singing-voice-conversion candidates record, with a cited source for each fact, license and commercial-use restrictions, Windows and CPU support, CUDA/VRAM/RAM needs, inference speed, reference-data needs, zero-shot cloning, output sample rate and API/CLI stability. Mark any attribute that cannot be established from a source as UNKNOWN rather than guessing. Recommend exactly one candidate for the first adapter and state why it ranks first under: runs fully offline, runs on Windows, usable licence for a commercial desktop app, stable invocation. Popularity alone is not a reason.",
+          "acceptance": [
+            "every attribute for every candidate has a source link or is marked UNKNOWN",
+            "exactly one recommended candidate with the ranking rationale",
+            "documentation only; no dependency, model download or code is added",
+            "Canonical preflight, required CI checks and review pass at the exact head"
+          ],
+          "allowed_paths": [
+            "docs/**"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ],
+          "runner_requirements": [
+            "code",
+            "local",
+            "offline"
+          ],
+          "runtime_requirements": []
+        },
+        {
+          "id": "s4-adapter-contract",
+          "state": "PLANNED",
+          "capability_level": 3,
+          "depends_on": [
+            "s4-engine-evaluation"
+          ],
+          "objective": "Add an engine-independent singing-conversion adapter contract in backend/services/ (guide vocal path + target voice + output path in, result with output path, sample rate, duration, engine id and version out) that uses the S1 capability schema, S2 project paths and S3 F0 track, refuses to run for an engine that does not declare singing_conversion, never falls back to speech synthesis, and ships with an in-test fake engine proving the contract.",
+          "acceptance": [
+            "a fake engine passes the contract; an engine without singing_conversion is refused with a clear error",
+            "no code path calls speech synthesis",
+            "result duration is checked against the guide vocal within a stated tolerance and drift is reported",
+            "tests are repository-native; no existing speech behavior changes",
+            "docs/STRUCTURE.md service count updated if a service file is added",
+            "Canonical preflight, required CI checks and review pass at the exact head"
+          ],
+          "allowed_paths": [
+            "backend/services/**",
+            "tests/backend/services/**",
+            "docs/**"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ],
+          "runner_requirements": [
+            "code",
+            "local",
+            "offline"
+          ],
+          "runtime_requirements": []
+        },
+        {
+          "id": "s4-first-adapter",
+          "state": "PLANNED",
+          "capability_level": 4,
+          "depends_on": [
+            "s4-adapter-contract"
+          ],
+          "objective": "Implement the adapter for the engine recommended in docs/projects/singing-engine-evaluation.md behind the S4 contract, as an optional dependency that is absent by default, with tests that run without the engine (mocked invocation) and one smoke test that is skipped, with a clear reason, when the engine is not installed. Record engine, model and version provenance in the result.",
+          "acceptance": [
+            "the default install and every existing test are unaffected when the engine is absent",
+            "a missing engine yields a clear 'optional singing engine not installed' error",
+            "provenance (engine, model, version, input and output hashes) is recorded",
+            "no network access at conversion time",
+            "Canonical preflight, required CI checks and review pass at the exact head"
+          ],
+          "allowed_paths": [
+            "backend/services/**",
+            "tests/backend/services/**",
+            "docs/**",
+            "pyproject.toml"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ],
+          "runner_requirements": [
+            "code",
+            "local",
+            "offline"
+          ],
+          "runtime_requirements": []
+        }
+      ]
     }
   ],
   "roadmap": [
-    "singing-s2-project-model"
+    "singing-s4-first-svc-adapter"
   ]
 }
