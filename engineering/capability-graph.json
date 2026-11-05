@@ -255,7 +255,7 @@
         },
         {
           "id": "s4-adapter-contract",
-          "state": "PLANNED",
+          "state": "VERIFIED_COMPLETE",
           "capability_level": 3,
           "depends_on": [
             "s4-engine-evaluation"
@@ -287,7 +287,12 @@
             "local",
             "offline"
           ],
-          "runtime_requirements": []
+          "runtime_requirements": [],
+          "verification": [
+            "backend/services/singing_conversion.py convert_singing: S1 singing_conversion gate with no speech fallback, S2 renders-only output, verified duration vs the guide vocal with reported drift, S3 F0 track passthrough, synthetic-audio watermark chokepoint, truncated-WAV and symlink refusals",
+            "tests/backend/services/test_singing_conversion.py (14 contract tests with a fake engine) plus test_structure_doc and test_watermark_route_coverage",
+            "VoiceStudio PR #26 merged 2026-11-05 as a31dc4f; every required check (tests, smoke on 4 platforms, CodeQL, bandit, gitleaks, dependency audit) green at its exact head b777ea9; three review findings fixed and resolved"
+          ]
         },
         {
           "id": "s4-first-adapter",
