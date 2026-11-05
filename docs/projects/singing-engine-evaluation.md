@@ -79,3 +79,13 @@ Conditions carried into `s4-first-adapter` (each is an acceptance check, resolvi
 Inference speed, memory use, and the three quality attributes (sustained vowels, pitch fidelity, consonant
 intelligibility) need audio runs, which this slice does not do. The S3 evaluator (`evaluate_f0` in
 `backend/services/singing_pitch.py`) is the instrument for pitch fidelity when the adapter exists.
+
+## First adapter (s4-first-adapter)
+
+`backend/services/singing_rvc_adapter.py` runs RVC `2.3.260718` as a subprocess behind the S4 contract. It is optional
+and absent by default: set `VOICESTUDIO_RVC_DIR` to an RVC checkout containing `infer/cli.py`; otherwise conversion
+raises "optional singing engine not installed". `target_voice` is the path to a per-voice `.pth` model. The child runs
+with Hugging Face offline switches and the adapter opens no sockets. The result's `provenance` holds engine, version,
+model name, and SHA-256 hashes of model, input and output. Tests mock the subprocess; the real-engine smoke test is
+skipped unless `VOICESTUDIO_RVC_DIR` and `VOICESTUDIO_RVC_TEST_MODEL` are set. CPU time/memory (condition 4) and the
+RMVPE licence (condition 3) remain unmeasured/unresolved; the S3 F0 track is not yet passed to RVC.

@@ -78,6 +78,7 @@ class EngineOutput:
 
     sample_rate: int
     duration_seconds: float
+    provenance: dict | None = None  # engine/model/version/hashes, recorded verbatim in the result when supplied
 
 
 @dataclass(frozen=True)
@@ -91,6 +92,7 @@ class ConversionResult:
     within_tolerance: bool
     engine_id: str
     engine_version: str
+    provenance: dict | None = None
 
 
 class SingingConversionEngine(Protocol):
@@ -224,7 +226,8 @@ def convert_singing(engine: SingingConversionEngine, request: ConversionRequest,
     result = ConversionResult(
         output_path=output, sample_rate=measured_rate, duration_seconds=measured, guide_duration_seconds=guide_duration,
         drift_seconds=drift, tolerance_seconds=tolerance_seconds, within_tolerance=abs(drift) <= tolerance_seconds,
-        engine_id=str(engine.id), engine_version=str(engine.version))
+        engine_id=str(engine.id), engine_version=str(engine.version),
+        provenance=produced.provenance)
     if not result.within_tolerance and not allow_drift:
         raise DurationDriftError(
             f"converted audio is {measured:.3f}s against a {guide_duration:.3f}s guide vocal "
