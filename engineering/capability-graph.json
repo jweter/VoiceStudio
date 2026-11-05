@@ -222,7 +222,7 @@
       "slices": [
         {
           "id": "s4-engine-evaluation",
-          "state": "PLANNED",
+          "state": "VERIFIED_COMPLETE",
           "capability_level": 3,
           "objective": "Write docs/projects/singing-engine-evaluation.md following the 'Engine research lane' in docs/projects/singing-mode.md: for at least three open, locally runnable singing-voice-conversion candidates record, with a cited source for each fact, license and commercial-use restrictions, Windows and CPU support, CUDA/VRAM/RAM needs, inference speed, reference-data needs, zero-shot cloning, output sample rate and API/CLI stability. Mark any attribute that cannot be established from a source as UNKNOWN rather than guessing. Recommend exactly one candidate for the first adapter and state why it ranks first under: runs fully offline, runs on Windows, usable licence for a commercial desktop app, stable invocation. Popularity alone is not a reason.",
           "acceptance": [
@@ -247,7 +247,11 @@
             "local",
             "offline"
           ],
-          "runtime_requirements": []
+          "runtime_requirements": [],
+          "verification": [
+            "docs/projects/singing-engine-evaluation.md: four candidates (RVC, so-vits-svc-fork, DDSP-SVC, Fish Diffusion) compared on every research-lane attribute; each fact has a source link or is marked UNKNOWN; exactly one recommendation (RVC) with the ranking rationale",
+            "VoiceStudio PR #24 merged 2026-11-05 as a0d41b0; every required check (tests, smoke on 4 platforms, CodeQL, bandit, gitleaks, dependency audit) green at its exact head f9e7b0c; documentation only, no dependency, model or code added"
+          ]
         },
         {
           "id": "s4-adapter-contract",
