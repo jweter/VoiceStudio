@@ -9,7 +9,9 @@
 * the output must land in the S2 project's ``renders`` directory (``singing_project_paths``);
 * the guide vocal stays the timing authority: the converted audio's measured duration is compared with the guide
   vocal's within a stated tolerance and the drift is reported (and refused by default when it exceeds it);
-* the optional S3 ``F0Track`` of the guide vocal is handed to the engine unchanged.
+* the optional S3 ``F0Track`` of the guide vocal is handed to the engine unchanged;
+* converted audio is synthetic audio: before it is returned it goes through the app's provenance chokepoint
+  (``services.watermark.mark_synthetic``, preference-gated like every other producer) and must therefore be 16-bit PCM.
 
 Engines are plain objects with ``id``, ``version``, ``singing_capabilities`` and ``convert(request)``; the first real
 adapter (RVC, see docs/projects/singing-engine-evaluation.md) is added behind this contract.  Only the standard
@@ -17,6 +19,7 @@ library is used here (WAV durations are read with ``wave``).
 """
 from __future__ import annotations
 
+import os
 import wave
 from dataclasses import dataclass
 from pathlib import Path
@@ -99,16 +102,59 @@ class SingingConversionEngine(Protocol):
         """Write a converted vocal to ``output`` (a ``.wav`` inside the project's renders directory)."""
 
 
-def wav_duration_seconds(path: Path) -> tuple[float, int]:
-    """(duration in seconds, sample rate) of a PCM WAV file; raises ``EngineOutputError``/``InvalidConversionRequest``."""
+def _read_wav(path: Path, error: type[SingingConversionError]) -> tuple[int, int, int, bytes]:
+    """(sample rate, channels, sample width in bytes, frame data) of a WAV file whose payload is complete.
+
+    The header alone is never trusted: a file whose data chunk is shorter than the frame count it declares is refused.
+    """
     try:
         with wave.open(str(path), "rb") as handle:
-            rate, frames = handle.getframerate(), handle.getnframes()
+            rate, channels, width, count = (handle.getframerate(), handle.getnchannels(), handle.getsampwidth(),
+                                            handle.getnframes())
+            data = handle.readframes(count)
     except (OSError, EOFError, wave.Error) as exc:
-        raise InvalidConversionRequest(f"{path.name} is not a readable WAV file: {exc}") from exc
-    if rate <= 0:
-        raise InvalidConversionRequest(f"{path.name} has an invalid sample rate")
-    return frames / rate, rate
+        raise error(f"{path.name} is not a readable WAV file: {exc}") from exc
+    if rate <= 0 or channels <= 0 or width <= 0:
+        raise error(f"{path.name} has an invalid WAV header")
+    if len(data) != count * channels * width:
+        raise error(f"{path.name} is truncated: its header declares {count} frames but the file holds fewer")
+    return rate, channels, width, data
+
+
+def wav_duration_seconds(path: Path, error: type[SingingConversionError] = InvalidConversionRequest) -> tuple[float, int]:
+    """(duration in seconds, sample rate) of a complete PCM WAV file."""
+    rate, channels, width, data = _read_wav(path, error)
+    return len(data) // (channels * width) / rate, rate
+
+
+def _mark_synthetic(output: Path) -> None:
+    """Pass the converted audio through ``mark_synthetic`` and rewrite the file only if the mark changed it.
+
+    The chokepoint is gated on the user's watermark preference and is a no-op when AudioSeal is not installed, so an
+    unchanged tensor leaves the engine's file byte-for-byte as written.
+    """
+    rate, channels, width, data = _read_wav(output, EngineOutputError)
+    if width != 2:
+        raise EngineOutputError("converted audio must be 16-bit PCM WAV so provenance marking can be applied")
+    import torch
+
+    from services.watermark import mark_synthetic
+
+    samples = torch.frombuffer(bytearray(data), dtype=torch.int16).reshape(-1, channels).t().float() / 32768.0
+    marked = mark_synthetic(samples, rate, context="singing.conversion")
+    if marked is samples or (marked.shape == samples.shape and torch.equal(marked, samples)):
+        return
+    pcm = (marked.clamp(-1.0, 1.0) * 32767.0).round().to(torch.int16).t().contiguous()
+    temporary = output.with_name(output.name + ".marking")
+    try:
+        with wave.open(str(temporary), "wb") as handle:
+            handle.setnchannels(channels)
+            handle.setsampwidth(2)
+            handle.setframerate(rate)
+            handle.writeframes(pcm.numpy().tobytes())
+        os.replace(temporary, output)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def _declares_singing_conversion(engine: object) -> bool:
@@ -127,11 +173,15 @@ def _output_path(request: ConversionRequest) -> Path:
             or name in {".wav"} or any(char in name for char in '/\\:*?"<>|\x00')):
         raise InvalidConversionRequest("output_name must be a plain file name ending in .wav")
     root = Path(request.projects_root)
+    project_dir = root / request.project_id
     renders = root / layout["renders_dir"]
-    if not renders.is_dir() or renders.is_symlink():
+    if project_dir.is_symlink() or renders.is_symlink():
+        raise InvalidConversionRequest("the project directory and its renders directory must not be symbolic links")
+    if not renders.is_dir():
         raise InvalidConversionRequest("the project's renders directory does not exist (create the project first)")
     target = renders / name
-    try:
+    try:  # a symlinked projects root is the caller's choice; only links inside it are refused
+        renders.resolve().relative_to(root.resolve())
         target.resolve(strict=False).relative_to(renders.resolve())
     except ValueError as exc:
         raise InvalidConversionRequest("output would leave the project's renders directory") from exc
@@ -155,7 +205,7 @@ def convert_singing(engine: SingingConversionEngine, request: ConversionRequest,
         raise InvalidConversionRequest("guide_vocal does not exist")
     if not tolerance_seconds >= 0:
         raise InvalidConversionRequest("tolerance_seconds must be non-negative")
-    guide_duration, _ = wav_duration_seconds(guide)
+    guide_duration, _ = wav_duration_seconds(guide)  # refuses a truncated guide vocal as well
     output = _output_path(request)
     if output.exists():  # never overwrite, and never mistake a leftover file for what the engine just produced
         raise InvalidConversionRequest(f"{output.name} already exists in the project's renders directory")
@@ -164,11 +214,12 @@ def convert_singing(engine: SingingConversionEngine, request: ConversionRequest,
 
     if not output.is_file():
         raise EngineOutputError("the engine did not write its output file")
-    measured, measured_rate = wav_duration_seconds(output)
+    measured, measured_rate = wav_duration_seconds(output, EngineOutputError)  # complete payload, not just a header
     if produced.sample_rate != measured_rate:
         raise EngineOutputError(f"engine reported {produced.sample_rate} Hz but wrote {measured_rate} Hz")
     if abs(produced.duration_seconds - measured) > 1 / measured_rate:
         raise EngineOutputError(f"engine reported {produced.duration_seconds:.3f}s but wrote {measured:.3f}s")
+    _mark_synthetic(output)  # provenance mark (preference-gated) before the render is exposed
     drift = measured - guide_duration
     result = ConversionResult(
         output_path=output, sample_rate=measured_rate, duration_seconds=measured, guide_duration_seconds=guide_duration,

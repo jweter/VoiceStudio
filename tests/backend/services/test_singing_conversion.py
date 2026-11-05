@@ -200,6 +200,88 @@ def test_no_code_path_in_the_contract_reaches_speech_synthesis() -> None:
     imported |= {node.module or "" for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)}
     # the only backend import is the S1 capability validator, imported lazily; no generate/synthesis API is used
     assert imported <= {"__future__", "wave", "dataclasses", "pathlib", "typing", "services.singing_project",
-                        "services.singing_pitch", "services.tts_backend"}
+                        "services.singing_pitch", "services.tts_backend", "os", "torch", "services.watermark"}
     for forbidden in ("get_active_tts_backend", "get_backend_class", ".generate(", "synthesize", "list_backends"):
         assert forbidden not in source
+
+
+def test_a_truncated_wav_is_refused_whether_it_is_the_guide_or_the_engines_output(project) -> None:
+    root, guide = project
+    full = guide.read_bytes()
+    truncated_guide = root / "demo" / "source" / "cut.wav"
+    truncated_guide.write_bytes(full[:44])  # intact header declaring 2 s, no audio
+    with pytest.raises(sc.InvalidConversionRequest, match="truncated"):
+        sc.convert_singing(FakeEngine(), request(project, guide_vocal=truncated_guide))
+
+    class Truncating(FakeEngine):
+        def convert(self, guide_vocal, target_voice, output, f0_track):
+            write_wav(output, 2.0)
+            output.write_bytes(output.read_bytes()[:44])
+            return sc.EngineOutput(RATE, 2.0)
+
+    with pytest.raises(sc.EngineOutputError, match="truncated"):
+        sc.convert_singing(Truncating(), request(project, output_name="t.wav"))
+
+
+def test_a_symlinked_project_directory_cannot_redirect_the_render_outside_the_root(project, tmp_path: Path) -> None:
+    root, guide = project
+    outside = tmp_path.parent / (tmp_path.name + "_outside")
+    (outside / "renders").mkdir(parents=True)
+    try:
+        (root / "linked").symlink_to(outside, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlinks are not available here")
+    engine = FakeEngine()
+
+    with pytest.raises(sc.InvalidConversionRequest, match="symbolic"):
+        sc.convert_singing(engine, request(project, project_id="linked"))
+
+    assert engine.calls == [] and list((outside / "renders").iterdir()) == []
+
+
+def test_converted_audio_goes_through_the_synthetic_audio_chokepoint(project, monkeypatch: pytest.MonkeyPatch) -> None:
+    import torch
+
+    from services import watermark
+
+    seen: list[tuple] = []
+
+    def mark(waveform, sample_rate, *, context, force=False):
+        seen.append((tuple(waveform.shape), sample_rate, context))
+        return waveform * 0.5  # a visible, deterministic "mark"
+
+    monkeypatch.setattr(watermark, "mark_synthetic", mark)
+    result = sc.convert_singing(FakeEngine(), request(project))
+
+    assert seen == [((1, RATE * 2), RATE, "singing.conversion")]
+    with wave.open(str(result.output_path), "rb") as handle:
+        assert handle.getnframes() == RATE * 2 and handle.getframerate() == RATE  # same length: timing unchanged
+    assert result.within_tolerance is True
+    assert torch.is_tensor(torch.zeros(1))
+
+
+def test_an_unchanged_chokepoint_result_leaves_the_engines_file_untouched(project, monkeypatch: pytest.MonkeyPatch) -> None:
+    from services import watermark
+
+    monkeypatch.setattr(watermark, "mark_synthetic", lambda waveform, rate, *, context, force=False: waveform)
+    engine = FakeEngine()
+    result = sc.convert_singing(engine, request(project))
+
+    expected = struct.pack("<h", 0) * (RATE * 2)
+    with wave.open(str(result.output_path), "rb") as handle:
+        assert handle.readframes(handle.getnframes()) == expected
+    assert not list(result.output_path.parent.glob("*.marking"))
+
+
+def test_audio_that_cannot_carry_the_mark_is_refused(project) -> None:
+    class Wide(FakeEngine):
+        def convert(self, guide_vocal, target_voice, output, f0_track):
+            with wave.open(str(output), "wb") as handle:
+                handle.setnchannels(1)
+                handle.setsampwidth(3)  # 24-bit
+                handle.setframerate(RATE)
+                handle.writeframes(b"\x00\x00\x00" * (RATE * 2))
+            return sc.EngineOutput(RATE, 2.0)
+
+    with pytest.raises(sc.EngineOutputError, match="16-bit"):
+        sc.convert_singing(Wide(), request(project, output_name="wide.wav"))
