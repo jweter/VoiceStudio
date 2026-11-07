@@ -83,14 +83,18 @@ class RvcSingingEngine:
         if not self.installed:
             raise OptionalSingingEngineNotInstalled(
                 f"optional singing engine not installed: set {DIR_ENV} to an RVC checkout containing {CLI_RELATIVE}")
-        model = Path(target_voice)
+        model = Path(target_voice).resolve()
+        guide_vocal, output = Path(guide_vocal).resolve(), Path(output).resolve()
         if not model.is_file():
             raise InvalidConversionRequest("target_voice must be the path of an existing RVC model file")
         input_sha = _sha256(guide_vocal)
-        command = [self.python, str(self.cli), "--model", str(model), "--input", str(guide_vocal), "--output", str(output)]
+        # Absolute paths throughout: the subprocess runs with cwd=engine_dir, so relative paths would change meaning.
+        # "--index-rate 0" = model-only conversion; RVC's default (0.75) would demand a retrieval index we don't supply.
+        command = [str(Path(self.python).resolve() if os.sep in self.python else self.python), str(self.cli.resolve()),
+                   "--model", str(model), "--input", str(guide_vocal), "--output", str(output), "--index-rate", "0"]
         env = {**os.environ, "HF_HUB_OFFLINE": "1", "TRANSFORMERS_OFFLINE": "1"}
         try:
-            done = subprocess.run(command, cwd=str(self.engine_dir), env=env, capture_output=True, text=True,
+            done = subprocess.run(command, cwd=str(self.engine_dir.resolve()), env=env, capture_output=True, text=True,
                                   timeout=TIMEOUT_SECONDS, check=False)
         except (OSError, subprocess.SubprocessError) as exc:
             raise EngineOutputError(f"RVC could not be run: {exc}") from exc

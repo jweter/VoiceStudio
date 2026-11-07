@@ -66,6 +66,8 @@ def test_conversion_records_provenance_offline(setup, monkeypatch):
     assert prov["model_sha256"] == hashlib.sha256(b"model-bytes").hexdigest()
     assert prov["input_sha256"] == hashlib.sha256(guide.read_bytes()).hexdigest()
     assert len(prov["output_sha256"]) == 64
+    assert seen["command"][-2:] == ["--index-rate", "0"]
+    assert all(Path(seen["command"][i]).is_absolute() for i in (1, 3, 5, 7))
     assert seen["env"]["HF_HUB_OFFLINE"] == "1" and seen["env"]["TRANSFORMERS_OFFLINE"] == "1"
     assert result.engine_id == "rvc"
 
@@ -96,3 +98,18 @@ def test_smoke_real_rvc(tmp_path):
     req = sc.ConversionRequest(tmp_path, "demo", guide, os.environ["VOICESTUDIO_RVC_MODEL"], "out.wav")
     result = sc.convert_singing(rvc.RvcSingingEngine(), req, allow_drift=True)
     assert result.provenance["output_sha256"]
+
+
+def test_relative_paths_are_made_absolute_before_the_subprocess_changes_directory(setup, monkeypatch):
+    tmp, _, _, engine_dir, req = setup
+    seen = {}
+
+    def fake_run(command, **kwargs):
+        seen["command"] = command
+        write_wav(Path(command[command.index("--output") + 1]), 1.0)
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(rvc.subprocess, "run", fake_run)
+    monkeypatch.chdir(tmp)
+    sc.convert_singing(rvc.RvcSingingEngine("rvc", version="v"), req)
+    assert Path(seen["command"][1]).is_absolute() and Path(seen["command"][1]).is_file()
