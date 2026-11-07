@@ -23,7 +23,7 @@ import os
 import wave
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Mapping, Protocol
 
 from services.singing_project import singing_project_paths
 
@@ -78,6 +78,8 @@ class EngineOutput:
 
     sample_rate: int
     duration_seconds: float
+    # Engine/model/version and input/output hashes, when the engine records them (see singing_engine_rvc).
+    provenance: Mapping[str, str] | None = None
 
 
 @dataclass(frozen=True)
@@ -91,6 +93,7 @@ class ConversionResult:
     within_tolerance: bool
     engine_id: str
     engine_version: str
+    provenance: Mapping[str, str] | None = None
 
 
 class SingingConversionEngine(Protocol):
@@ -224,7 +227,7 @@ def convert_singing(engine: SingingConversionEngine, request: ConversionRequest,
     result = ConversionResult(
         output_path=output, sample_rate=measured_rate, duration_seconds=measured, guide_duration_seconds=guide_duration,
         drift_seconds=drift, tolerance_seconds=tolerance_seconds, within_tolerance=abs(drift) <= tolerance_seconds,
-        engine_id=str(engine.id), engine_version=str(engine.version))
+        engine_id=str(engine.id), engine_version=str(engine.version), provenance=produced.provenance)
     if not result.within_tolerance and not allow_drift:
         raise DurationDriftError(
             f"converted audio is {measured:.3f}s against a {guide_duration:.3f}s guide vocal "
