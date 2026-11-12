@@ -349,7 +349,7 @@
       "slices": [
         {
           "id": "s5-analyze-and-preview-service",
-          "state": "PLANNED",
+          "state": "VERIFIED_COMPLETE",
           "capability_level": 3,
           "depends_on": [],
           "objective": "Add a backend service that composes the delivered pieces for the Singing workspace without any UI: analyze_guide_vocal (backend/services/singing_pitch.py extract_f0 and voiced_segments on the chosen guide vocal) and render_preview (convert_singing from backend/services/singing_conversion.py on a bounded excerpt of the guide), returning the guide F0 track, the output F0 track and a per-frame cents difference, plus the S4 provenance. Only compatible engines are offered (reuse the S1 catalogue filtering). Tests use the fake engine from the S4 contract tests; nothing requires RVC to be installed. Roadmap: docs/OWNER_APPROVED_ROADMAP_2026-10-25.md Next slices items 2-3; docs/projects/singing-mode.md UI concept.",
@@ -378,7 +378,12 @@
             "local",
             "offline"
           ],
-          "runtime_requirements": []
+          "runtime_requirements": [],
+          "verification": [
+            "https://github.com/jweter/VoiceStudio/pull/31 merged 2026-11-12 as c064620bc4 (required checks passed at the exact head; capable-builder pull request): backend/services/singing_preview.py adds analyze_guide_vocal (S3 extract_f0 and voiced_segments; an unreadable, non-WAV or truncated file raises InvalidConversionRequest), render_preview (bounded excerpt, MAX_PREVIEW_SECONDS = 15.0, the S4 convert_singing contract, returns the S4 ConversionResult with provenance, the guide F0 track, the output F0 track and a per-frame cents-difference series) and compatible_singing_engines (S1 catalogue filtering, so an ineligible engine is never offered and convert_singing refuses it with EngineNotEligible).",
+            "tests/backend/services/test_singing_preview.py: 11 tests using the S4 fake-engine shape, so nothing needs RVC installed; no network and no speech-synthesis fallback. The pull request reports the full suite passing apart from one sandbox network-probe test that also fails without the change.",
+            "Not shown by this record: the Singing workspace UI and its endpoint (the s5-singing-workspace-ui slice), any wiring of this service into an API, and any audible check of a real conversion."
+          ]
         },
         {
           "id": "s5-singing-workspace-ui",
