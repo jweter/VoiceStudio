@@ -296,7 +296,7 @@
         },
         {
           "id": "s4-first-adapter",
-          "state": "PLANNED",
+          "state": "VERIFIED_COMPLETE",
           "capability_level": 4,
           "depends_on": [
             "s4-adapter-contract"
@@ -328,12 +328,100 @@
             "local",
             "offline"
           ],
+          "runtime_requirements": [],
+          "verification": [
+            "https://github.com/jweter/VoiceStudio/pull/29 merged 2026-11-07 as f5144a1dcd44f4cf018513d3fd434a7d2b694905: backend/services/singing_engine_rvc.py adds the optional RVC adapter behind the S4 convert_singing contract; a missing engine raises OptionalSingingEngineNotInstalled; provenance (engine, version, model SHA-256, input and output SHA-256) is recorded; the subprocess runs with offline flags and the adapter makes no network calls.",
+            "tests/backend/services/test_singing_engine_rvc.py runs without the engine (mocked invocation) and one real-RVC smoke test is skipped with a stated reason when the engine is absent: 83 passed, 1 skipped for the singing test files at the PR head (from the PR description; not re-run here).",
+            "Not shown by this record: an end-to-end local conversion of a short guide vocal with the real engine, which the capability's completion_evidence still requires."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "singing-s5-workspace",
+      "state": "PLANNED",
+      "capability": "S5 - Singing workspace: choose a guide vocal and a target voice, analyze the guide's pitch, render a bounded preview through the S4 conversion contract, and show guide F0 against output F0 (docs/projects/singing-mode.md, UI concept and S5).",
+      "completion_evidence": [
+        "docs/projects/singing-mode.md S5 checklist state and the UI concept section",
+        "docs/OWNER_APPROVED_ROADMAP_2026-10-25.md Next slices item 3 (style selection, generation, preview), with audible Product Reality acceptance recorded as PENDING until a person has listened"
+      ],
+      "depends_on": [],
+      "slices": [
+        {
+          "id": "s5-analyze-and-preview-service",
+          "state": "PLANNED",
+          "capability_level": 3,
+          "depends_on": [],
+          "objective": "Add a backend service that composes the delivered pieces for the Singing workspace without any UI: analyze_guide_vocal (backend/services/singing_pitch.py extract_f0 and voiced_segments on the chosen guide vocal) and render_preview (convert_singing from backend/services/singing_conversion.py on a bounded excerpt of the guide), returning the guide F0 track, the output F0 track and a per-frame cents difference, plus the S4 provenance. Only compatible engines are offered (reuse the S1 catalogue filtering). Tests use the fake engine from the S4 contract tests; nothing requires RVC to be installed. Roadmap: docs/OWNER_APPROVED_ROADMAP_2026-10-25.md Next slices items 2-3; docs/projects/singing-mode.md UI concept.",
+          "acceptance": [
+            "analyze_guide_vocal returns the F0 track and voiced segments for a short deterministic fixture and rejects unreadable or non-WAV input with the existing InvalidConversionRequest-style error",
+            "render_preview converts only a bounded excerpt (a documented maximum duration), refuses an engine that does not declare singing conversion, and returns provenance plus guide and output F0 tracks and a cents-difference series",
+            "Engine choices are filtered through the S1 capability catalogue so an incompatible engine is never offered",
+            "No network access, no speech-synthesis fallback, and the default install and every existing test are unaffected when RVC is absent",
+            "Canonical preflight, required CI checks and review pass at the exact head"
+          ],
+          "allowed_paths": [
+            "backend/services/**",
+            "tests/backend/services/**",
+            "docs/**"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ],
+          "runner_requirements": [
+            "code",
+            "local",
+            "offline"
+          ],
+          "runtime_requirements": []
+        },
+        {
+          "id": "s5-singing-workspace-ui",
+          "state": "PLANNED",
+          "capability_level": 4,
+          "depends_on": [
+            "s5-analyze-and-preview-service"
+          ],
+          "objective": "Add the Singing workspace in the Electron app (electron/ is the only active UI; see AGENTS.md) beside the existing workspaces following the UI concept in docs/projects/singing-mode.md: guide-vocal chooser, target-voice selector, compatible-engine selector, Analyze and Generate preview actions, an Original | Converted A/B control, and a pitch trace of guide F0 against output F0, all driven by the S5 service through a singing endpoint kept separate from ordinary /generate speech calls. Audible Product Reality acceptance stays PENDING until a person has listened. Roadmap: docs/OWNER_APPROVED_ROADMAP_2026-10-25.md Next slices item 3.",
+          "acceptance": [
+            "The Singing workspace appears next to the existing workspaces and drives analyze and preview through a dedicated singing endpoint, not /generate",
+            "The pitch trace shows guide F0 and output F0 on one axis; the A/B control plays the original and the converted preview",
+            "Licensing and consent text from docs/projects/singing-mode.md is shown before a conversion, and the workspace refuses to run with an incompatible or missing engine with a clear message",
+            "Frontend and API behaviour are covered by the repository's native tests; the audible judgments listed under Human Product Reality checks are recorded PENDING, not claimed",
+            "Every user-facing string goes through i18n and is present, translated, in all locale files under electron/src/shared/i18n/locales; new selects use SearchableSelect and voice choices reuse VoiceSelector, per AGENTS.md",
+            "Canonical preflight, required CI checks and review pass at the exact head"
+          ],
+          "allowed_paths": [
+            "electron/**",
+            "backend/**",
+            "tests/**",
+            "docs/**"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ],
+          "runner_requirements": [
+            "code",
+            "local",
+            "offline"
+          ],
           "runtime_requirements": []
         }
       ]
     }
   ],
   "roadmap": [
+    "singing-s5-workspace",
     "singing-s4-first-svc-adapter"
   ]
 }
