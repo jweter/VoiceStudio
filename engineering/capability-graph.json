@@ -387,16 +387,17 @@
           "depends_on": [
             "s5-analyze-and-preview-service"
           ],
-          "objective": "Add the Singing workspace beside the existing workspaces following the UI concept in docs/projects/singing-mode.md: guide-vocal chooser, target-voice selector, compatible-engine selector, Analyze and Generate preview actions, an Original | Converted A/B control, and a pitch trace of guide F0 against output F0, all driven by the S5 service through a singing endpoint kept separate from ordinary /generate speech calls. Audible Product Reality acceptance stays PENDING until a person has listened. Roadmap: docs/OWNER_APPROVED_ROADMAP_2026-10-25.md Next slices item 3.",
+          "objective": "Add the Singing workspace in the Electron app (electron/ is the only active UI; see AGENTS.md) beside the existing workspaces following the UI concept in docs/projects/singing-mode.md: guide-vocal chooser, target-voice selector, compatible-engine selector, Analyze and Generate preview actions, an Original | Converted A/B control, and a pitch trace of guide F0 against output F0, all driven by the S5 service through a singing endpoint kept separate from ordinary /generate speech calls. Audible Product Reality acceptance stays PENDING until a person has listened. Roadmap: docs/OWNER_APPROVED_ROADMAP_2026-10-25.md Next slices item 3.",
           "acceptance": [
             "The Singing workspace appears next to the existing workspaces and drives analyze and preview through a dedicated singing endpoint, not /generate",
             "The pitch trace shows guide F0 and output F0 on one axis; the A/B control plays the original and the converted preview",
             "Licensing and consent text from docs/projects/singing-mode.md is shown before a conversion, and the workspace refuses to run with an incompatible or missing engine with a clear message",
             "Frontend and API behaviour are covered by the repository's native tests; the audible judgments listed under Human Product Reality checks are recorded PENDING, not claimed",
+            "Every user-facing string goes through i18n and is present, translated, in all locale files under electron/src/shared/i18n/locales; new selects use SearchableSelect and voice choices reuse VoiceSelector, per AGENTS.md",
             "Canonical preflight, required CI checks and review pass at the exact head"
           ],
           "allowed_paths": [
-            "frontend/**",
+            "electron/**",
             "backend/**",
             "tests/**",
             "docs/**"
