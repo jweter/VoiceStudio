@@ -3196,5 +3196,28 @@
     "addingVoice": "आवाज़ जोड़ी जा रही है…",
     "engineDefault": "इंजन डिफ़ॉल्ट",
     "preview": "आवाज का पूर्वावलोकन करें"
+  },
+  "singingWorkspace": {
+    "title": "गायन",
+    "mode_convert": "मौजूदा वोकल को बदलें",
+    "mode_synthesize_later": "बोल और धुन से बनाएं (जल्द आ रहा है)",
+    "guide_vocal_kicker": "गाइड वोकल",
+    "choose_guide_vocal": "गाइड वोकल चुनें (WAV)…",
+    "unsupported_audio": "यह फ़ाइल WAV नहीं है। गायन विश्लेषण के लिए अभी 16-बिट PCM WAV गाइड वोकल चाहिए।",
+    "engine_kicker": "इंजन",
+    "choose_engine": "गायन रूपांतरण वाला इंजन चुनें…",
+    "no_compatible_engine": "अभी कोई इंस्टॉल किया गया इंजन गायन रूपांतरण को सपोर्ट नहीं करता, इसलिए \"पूर्वावलोकन बनाएं\" बंद है।",
+    "consent_text": "केवल वही आवाज़ें क्लोन या बदलें जिनका उपयोग करने की आपको अनुमति है। मॉडल लाइसेंस VoiceStudio ऐप लाइसेंस से अलग होते हैं, और व्यावसायिक उपयोग पर रोक लागू हो सकती है।",
+    "analyze": "विश्लेषण करें",
+    "generate_preview": "पूर्वावलोकन बनाएं",
+    "ab_kicker": "A/B",
+    "original": "मूल",
+    "converted": "रूपांतरित",
+    "pitch_trace_kicker": "पिच ट्रेस",
+    "pitch_trace_label": "गाइड की पिच की तुलना रूपांतरित आउटपुट की पिच से",
+    "pitch_trace_empty": "पिच ट्रेस देखने के लिए गाइड वोकल का विश्लेषण करें।",
+    "pitch_trace_guide": "गाइड F0",
+    "pitch_trace_output": "आउटपुट F0",
+    "engine_provenance": "{{engine}} ({{version}}) से रेंडर किया गया"
   }
 }

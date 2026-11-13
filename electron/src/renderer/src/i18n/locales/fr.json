@@ -3198,5 +3198,28 @@
     "addingVoice": "Ajout de la voix…",
     "engineDefault": "Moteur par défaut",
     "preview": "Aperçu de la voix"
+  },
+  "singingWorkspace": {
+    "title": "Chant",
+    "mode_convert": "Convertir une voix chantée existante",
+    "mode_synthesize_later": "Générer à partir des paroles et de la mélodie (bientôt disponible)",
+    "guide_vocal_kicker": "Voix guide",
+    "choose_guide_vocal": "Choisissez une voix guide (WAV)…",
+    "unsupported_audio": "Ce fichier n'est pas un WAV. L'analyse du chant nécessite pour l'instant une voix guide WAV PCM 16 bits.",
+    "engine_kicker": "Moteur",
+    "choose_engine": "Choisissez un moteur de conversion de chant…",
+    "no_compatible_engine": "Aucun moteur installé ne prend encore en charge la conversion de chant ; \"Générer l'aperçu\" est donc désactivé.",
+    "consent_text": "Ne clonez ou ne convertissez que des voix que vous avez le droit d'utiliser. Les licences des modèles sont distinctes de la licence de l'application VoiceStudio et des restrictions d'usage commercial peuvent s'appliquer.",
+    "analyze": "Analyser",
+    "generate_preview": "Générer l'aperçu",
+    "ab_kicker": "A/B",
+    "original": "Original",
+    "converted": "Convertie",
+    "pitch_trace_kicker": "Tracé de hauteur",
+    "pitch_trace_label": "Hauteur de la voix guide comparée à la hauteur de la sortie convertie",
+    "pitch_trace_empty": "Analysez une voix guide pour voir son tracé de hauteur.",
+    "pitch_trace_guide": "F0 guide",
+    "pitch_trace_output": "F0 de sortie",
+    "engine_provenance": "Généré avec {{engine}} ({{version}})"
   }
 }

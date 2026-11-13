@@ -3196,5 +3196,28 @@
     "addingVoice": "Stimme wird hinzugefügt…",
     "engineDefault": "Motorstandard",
     "preview": "Vorschau der Stimme"
+  },
+  "singingWorkspace": {
+    "title": "Gesang",
+    "mode_convert": "Vorhandenen Gesang konvertieren",
+    "mode_synthesize_later": "Aus Text + Melodie erzeugen (folgt später)",
+    "guide_vocal_kicker": "Referenzgesang",
+    "choose_guide_vocal": "Referenzgesang wählen (WAV)…",
+    "unsupported_audio": "Diese Datei ist keine WAV-Datei. Die Gesangsanalyse benötigt derzeit einen 16-Bit-PCM-WAV-Referenzgesang.",
+    "engine_kicker": "Engine",
+    "choose_engine": "Engine für Gesangskonvertierung wählen…",
+    "no_compatible_engine": "Keine installierte Engine unterstützt bisher Gesangskonvertierung, daher ist \"Vorschau erzeugen\" deaktiviert.",
+    "consent_text": "Klone oder konvertiere nur Stimmen, die du nutzen darfst. Modell-Lizenzen sind unabhängig von der VoiceStudio-App-Lizenz, und es können Einschränkungen für die kommerzielle Nutzung gelten.",
+    "analyze": "Analysieren",
+    "generate_preview": "Vorschau erzeugen",
+    "ab_kicker": "A/B",
+    "original": "Original",
+    "converted": "Konvertiert",
+    "pitch_trace_kicker": "Tonhöhenverlauf",
+    "pitch_trace_label": "Tonhöhe der Referenz im Vergleich zur Tonhöhe der konvertierten Ausgabe",
+    "pitch_trace_empty": "Analysiere einen Referenzgesang, um den Tonhöhenverlauf zu sehen.",
+    "pitch_trace_guide": "Referenz-F0",
+    "pitch_trace_output": "Ausgabe-F0",
+    "engine_provenance": "Erzeugt mit {{engine}} ({{version}})"
   }
 }

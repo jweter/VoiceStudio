@@ -3196,5 +3196,28 @@
     "addingVoice": "Ses ekleniyor…",
     "engineDefault": "Motor varsayılanı",
     "preview": "Sesi önizle"
+  },
+  "singingWorkspace": {
+    "title": "Şarkı Söyleme",
+    "mode_convert": "Mevcut bir vokali dönüştür",
+    "mode_synthesize_later": "Söz ve melodiden oluştur (yakında)",
+    "guide_vocal_kicker": "Kılavuz vokal",
+    "choose_guide_vocal": "Bir kılavuz vokal seçin (WAV)…",
+    "unsupported_audio": "Bu dosya WAV değil. Şarkı analizi şu anda 16 bit PCM WAV kılavuz vokal gerektiriyor.",
+    "engine_kicker": "Motor",
+    "choose_engine": "Şarkı dönüştürme motoru seçin…",
+    "no_compatible_engine": "Henüz yüklü hiçbir motor şarkı dönüştürmeyi desteklemiyor, bu yüzden \"Önizleme oluştur\" devre dışı.",
+    "consent_text": "Yalnızca kullanma izniniz olan sesleri klonlayın veya dönüştürün. Model lisansları VoiceStudio uygulama lisansından ayrıdır ve ticari kullanım kısıtlamaları geçerli olabilir.",
+    "analyze": "Analiz et",
+    "generate_preview": "Önizleme oluştur",
+    "ab_kicker": "A/B",
+    "original": "Orijinal",
+    "converted": "Dönüştürülmüş",
+    "pitch_trace_kicker": "Perde izi",
+    "pitch_trace_label": "Kılavuzun perdesiyle dönüştürülmüş çıkışın perdesinin karşılaştırması",
+    "pitch_trace_empty": "Perde izini görmek için bir kılavuz vokali analiz edin.",
+    "pitch_trace_guide": "Kılavuz F0",
+    "pitch_trace_output": "Çıkış F0",
+    "engine_provenance": "{{engine}} ({{version}}) ile oluşturuldu"
   }
 }

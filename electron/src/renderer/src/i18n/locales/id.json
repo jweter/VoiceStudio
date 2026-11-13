@@ -3196,5 +3196,28 @@
     "addingVoice": "Menambahkan suara…",
     "engineDefault": "Default mesin",
     "preview": "Pratinjau suara"
+  },
+  "singingWorkspace": {
+    "title": "Bernyanyi",
+    "mode_convert": "Konversi vokal yang sudah ada",
+    "mode_synthesize_later": "Buat dari lirik + melodi (segera hadir)",
+    "guide_vocal_kicker": "Vokal panduan",
+    "choose_guide_vocal": "Pilih vokal panduan (WAV)…",
+    "unsupported_audio": "Berkas itu bukan WAV. Analisis nyanyian saat ini membutuhkan vokal panduan WAV PCM 16-bit.",
+    "engine_kicker": "Mesin",
+    "choose_engine": "Pilih mesin konversi nyanyian…",
+    "no_compatible_engine": "Belum ada mesin terpasang yang mendukung konversi nyanyian, jadi \"Buat pratinjau\" dinonaktifkan.",
+    "consent_text": "Hanya klon atau konversi suara yang Anda memiliki izin untuk digunakan. Lisensi model terpisah dari lisensi aplikasi VoiceStudio, dan pembatasan penggunaan komersial mungkin berlaku.",
+    "analyze": "Analisis",
+    "generate_preview": "Buat pratinjau",
+    "ab_kicker": "A/B",
+    "original": "Asli",
+    "converted": "Dikonversi",
+    "pitch_trace_kicker": "Jejak pitch",
+    "pitch_trace_label": "Pitch panduan dibandingkan dengan pitch hasil konversi",
+    "pitch_trace_empty": "Analisis vokal panduan untuk melihat jejak pitch-nya.",
+    "pitch_trace_guide": "F0 panduan",
+    "pitch_trace_output": "F0 keluaran",
+    "engine_provenance": "Dirender dengan {{engine}} ({{version}})"
   }
 }

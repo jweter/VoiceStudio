@@ -25,6 +25,7 @@ import {
   LayersIcon,
   LibraryIcon,
   MicIcon,
+  MicVocalIcon,
   PhoneCallIcon,
   PlayIcon,
   SettingsIcon,
@@ -136,6 +137,13 @@ export function CommandPalette() {
       group: workspaceGroup,
       icon: LayersIcon,
       run: () => navigate({ to: '/batch' }),
+    },
+    {
+      id: 'sing',
+      label: t('singingWorkspace.title'),
+      group: workspaceGroup,
+      icon: MicVocalIcon,
+      run: () => navigate({ to: '/sing' }),
     },
     {
       id: 'voices',

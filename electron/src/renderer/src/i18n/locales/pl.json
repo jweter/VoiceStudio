@@ -3200,5 +3200,28 @@
     "addingVoice": "Dodawanie głosu…",
     "engineDefault": "Domyślne ustawienie silnika",
     "preview": "Podgląd głosu"
+  },
+  "singingWorkspace": {
+    "title": "Śpiew",
+    "mode_convert": "Przekonwertuj istniejący wokal",
+    "mode_synthesize_later": "Generuj z tekstu i melodii (wkrótce)",
+    "guide_vocal_kicker": "Wokal wzorcowy",
+    "choose_guide_vocal": "Wybierz wokal wzorcowy (WAV)…",
+    "unsupported_audio": "Ten plik nie jest WAV. Analiza śpiewu wymaga obecnie 16-bitowego wokalu wzorcowego WAV PCM.",
+    "engine_kicker": "Silnik",
+    "choose_engine": "Wybierz silnik konwersji śpiewu…",
+    "no_compatible_engine": "Żaden zainstalowany silnik nie wspiera jeszcze konwersji śpiewu, więc \"Generuj podgląd\" jest wyłączone.",
+    "consent_text": "Klonuj lub konwertuj tylko głosy, do których masz uprawnienia. Licencje modeli są niezależne od licencji aplikacji VoiceStudio i mogą obowiązywać ograniczenia użycia komercyjnego.",
+    "analyze": "Analizuj",
+    "generate_preview": "Generuj podgląd",
+    "ab_kicker": "A/B",
+    "original": "Oryginał",
+    "converted": "Przekonwertowany",
+    "pitch_trace_kicker": "Wykres wysokości tonu",
+    "pitch_trace_label": "Wysokość tonu wzorca w porównaniu z wysokością tonu przekonwertowanego wyjścia",
+    "pitch_trace_empty": "Przeanalizuj wokal wzorcowy, aby zobaczyć wykres wysokości tonu.",
+    "pitch_trace_guide": "F0 wzorca",
+    "pitch_trace_output": "F0 wyjścia",
+    "engine_provenance": "Wyrenderowano za pomocą {{engine}} ({{version}})"
   }
 }

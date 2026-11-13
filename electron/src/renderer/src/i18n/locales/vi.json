@@ -3196,5 +3196,28 @@
     "addingVoice": "Đang thêm giọng nói…",
     "engineDefault": "Mặc định công cụ",
     "preview": "Xem trước giọng nói"
+  },
+  "singingWorkspace": {
+    "title": "Ca hát",
+    "mode_convert": "Chuyển đổi giọng hát hiện có",
+    "mode_synthesize_later": "Tạo từ lời và giai điệu (sắp có)",
+    "guide_vocal_kicker": "Giọng hát dẫn",
+    "choose_guide_vocal": "Chọn giọng hát dẫn (WAV)…",
+    "unsupported_audio": "Tệp đó không phải là WAV. Phân tích ca hát hiện cần giọng hát dẫn dạng WAV PCM 16-bit.",
+    "engine_kicker": "Công cụ",
+    "choose_engine": "Chọn công cụ chuyển đổi ca hát…",
+    "no_compatible_engine": "Chưa có công cụ nào được cài đặt hỗ trợ chuyển đổi ca hát, nên \"Tạo bản xem trước\" đang bị tắt.",
+    "consent_text": "Chỉ nhân bản hoặc chuyển đổi những giọng nói bạn được phép sử dụng. Giấy phép mô hình tách biệt với giấy phép ứng dụng VoiceStudio và có thể áp dụng hạn chế sử dụng thương mại.",
+    "analyze": "Phân tích",
+    "generate_preview": "Tạo bản xem trước",
+    "ab_kicker": "A/B",
+    "original": "Bản gốc",
+    "converted": "Đã chuyển đổi",
+    "pitch_trace_kicker": "Đường cao độ",
+    "pitch_trace_label": "Cao độ của giọng dẫn so với cao độ của đầu ra đã chuyển đổi",
+    "pitch_trace_empty": "Phân tích giọng hát dẫn để xem đường cao độ.",
+    "pitch_trace_guide": "F0 giọng dẫn",
+    "pitch_trace_output": "F0 đầu ra",
+    "engine_provenance": "Được dựng bằng {{engine}} ({{version}})"
   }
 }

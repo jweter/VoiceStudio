@@ -3196,5 +3196,28 @@
     "addingVoice": "Lägger till röst…",
     "engineDefault": "Standard för motor",
     "preview": "Förhandsgranska röst"
+  },
+  "singingWorkspace": {
+    "title": "Sång",
+    "mode_convert": "Konvertera en befintlig sång",
+    "mode_synthesize_later": "Generera från text och melodi (kommer senare)",
+    "guide_vocal_kicker": "Guidesång",
+    "choose_guide_vocal": "Välj en guidesång (WAV)…",
+    "unsupported_audio": "Den filen är inte en WAV-fil. Sånganalys behöver för närvarande en 16-bitars PCM WAV-guidesång.",
+    "engine_kicker": "Motor",
+    "choose_engine": "Välj en motor för sångkonvertering…",
+    "no_compatible_engine": "Ingen installerad motor stöder ännu sångkonvertering, så \"Generera förhandsvisning\" är inaktiverad.",
+    "consent_text": "Klona eller konvertera bara röster du har tillstånd att använda. Modellicenser är separata från VoiceStudios applikationslicens, och begränsningar för kommersiell användning kan gälla.",
+    "analyze": "Analysera",
+    "generate_preview": "Generera förhandsvisning",
+    "ab_kicker": "A/B",
+    "original": "Original",
+    "converted": "Konverterad",
+    "pitch_trace_kicker": "Tonhöjdsspår",
+    "pitch_trace_label": "Guidens tonhöjd jämfört med den konverterade utdatans tonhöjd",
+    "pitch_trace_empty": "Analysera en guidesång för att se dess tonhöjdsspår.",
+    "pitch_trace_guide": "Guide F0",
+    "pitch_trace_output": "Utdata F0",
+    "engine_provenance": "Renderad med {{engine}} ({{version}})"
   }
 }

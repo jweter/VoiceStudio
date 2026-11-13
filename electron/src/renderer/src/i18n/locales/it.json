@@ -3198,5 +3198,28 @@
     "addingVoice": "Aggiunta voce…",
     "engineDefault": "Motore difettoso",
     "preview": "Anteprima della voce"
+  },
+  "singingWorkspace": {
+    "title": "Canto",
+    "mode_convert": "Converti una voce cantata esistente",
+    "mode_synthesize_later": "Genera da testo e melodia (prossimamente)",
+    "guide_vocal_kicker": "Voce guida",
+    "choose_guide_vocal": "Scegli una voce guida (WAV)…",
+    "unsupported_audio": "Quel file non è un WAV. L'analisi del canto richiede attualmente una voce guida WAV PCM a 16 bit.",
+    "engine_kicker": "Motore",
+    "choose_engine": "Scegli un motore di conversione del canto…",
+    "no_compatible_engine": "Nessun motore installato supporta ancora la conversione del canto, quindi \"Genera anteprima\" è disabilitato.",
+    "consent_text": "Clona o converti solo voci che hai il permesso di usare. Le licenze dei modelli sono separate dalla licenza dell'app VoiceStudio e potrebbero applicarsi restrizioni sull'uso commerciale.",
+    "analyze": "Analizza",
+    "generate_preview": "Genera anteprima",
+    "ab_kicker": "A/B",
+    "original": "Originale",
+    "converted": "Convertita",
+    "pitch_trace_kicker": "Traccia dell'intonazione",
+    "pitch_trace_label": "Intonazione della guida confrontata con quella dell'output convertito",
+    "pitch_trace_empty": "Analizza una voce guida per vedere la traccia dell'intonazione.",
+    "pitch_trace_guide": "F0 guida",
+    "pitch_trace_output": "F0 output",
+    "engine_provenance": "Renderizzato con {{engine}} ({{version}})"
   }
 }

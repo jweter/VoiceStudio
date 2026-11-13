@@ -3196,5 +3196,28 @@
     "addingVoice": "Adding voice…",
     "engineDefault": "Engine default",
     "preview": "Preview voice"
+  },
+  "singingWorkspace": {
+    "title": "Singing",
+    "mode_convert": "Convert an existing vocal",
+    "mode_synthesize_later": "Generate from lyrics + melody (coming later)",
+    "guide_vocal_kicker": "Guide vocal",
+    "choose_guide_vocal": "Choose a guide vocal (WAV)…",
+    "unsupported_audio": "That file isn't a WAV. Singing analysis currently needs a 16-bit PCM WAV guide vocal.",
+    "engine_kicker": "Engine",
+    "choose_engine": "Choose a singing-conversion engine…",
+    "no_compatible_engine": "No installed engine supports singing conversion yet, so Generate preview is disabled.",
+    "consent_text": "Only clone or convert voices you have permission to use. Model licenses are separate from the VoiceStudio application license, and commercial-use restrictions may apply.",
+    "analyze": "Analyze",
+    "generate_preview": "Generate preview",
+    "ab_kicker": "A/B",
+    "original": "Original",
+    "converted": "Converted",
+    "pitch_trace_kicker": "Pitch trace",
+    "pitch_trace_label": "Guide pitch compared with the converted output's pitch",
+    "pitch_trace_empty": "Analyze a guide vocal to see its pitch trace.",
+    "pitch_trace_guide": "Guide F0",
+    "pitch_trace_output": "Output F0",
+    "engine_provenance": "Rendered with {{engine}} ({{version}})"
   }
 }
