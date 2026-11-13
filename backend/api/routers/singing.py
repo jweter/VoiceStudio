@@ -15,6 +15,7 @@ codes.
 """
 from __future__ import annotations
 
+import asyncio
 import uuid
 from pathlib import Path
 
@@ -122,7 +123,9 @@ async def analyze(guide_vocal: UploadFile = File(...)) -> dict:
     guide_path = Path(SINGING_DIR) / layout["source_dir"] / "guide_vocal.wav"
     await _save_upload(guide_vocal, guide_path)
     try:
-        result = analyze_guide_vocal(guide_path)
+        # Pitch extraction is CPU-bound for the whole song: keep it off the event loop so
+        # /health and every other request stay served while it runs.
+        result = await asyncio.to_thread(analyze_guide_vocal, guide_path)
     except SingingConversionError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {
@@ -155,7 +158,7 @@ async def preview(
         output_name="preview.wav",
     )
     try:
-        result = render_preview(engine, request)
+        result = await asyncio.to_thread(render_preview, engine, request)
     except SingingConversionError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return {

@@ -47,12 +47,16 @@ export function SingingPage() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
+  // Bumped on every new guide vocal: a request started for an earlier guide must not
+  // write its result (or its error) over the guide now on screen.
+  const guideGeneration = useRef(0);
 
   const ingest = (file: File) => {
     if (!isWavFile(file)) {
       setError(t('singingWorkspace.unsupported_audio'));
       return;
     }
+    guideGeneration.current += 1;
     setError('');
     setAnalysis(null);
     setPreview(null);
@@ -75,13 +79,14 @@ export function SingingPage() {
 
   const runAnalyze = async () => {
     if (!guideFile || !canAnalyze) return;
+    const generation = guideGeneration.current;
     setAnalyzing(true);
     setError('');
     try {
       const result = await analyzeGuideVocal(guideFile);
-      setAnalysis(result);
+      if (generation === guideGeneration.current) setAnalysis(result);
     } catch (err) {
-      setError(describeError(err));
+      if (generation === guideGeneration.current) setError(describeError(err));
     } finally {
       setAnalyzing(false);
     }
@@ -89,13 +94,14 @@ export function SingingPage() {
 
   const runGenerate = async () => {
     if (!guideFile || !canGenerate) return;
+    const generation = guideGeneration.current;
     setGenerating(true);
     setError('');
     try {
       const result = await renderSingingPreview(guideFile, engineId, targetVoiceId);
-      setPreview(result);
+      if (generation === guideGeneration.current) setPreview(result);
     } catch (err) {
-      setError(describeError(err));
+      if (generation === guideGeneration.current) setError(describeError(err));
     } finally {
       setGenerating(false);
     }
@@ -159,6 +165,7 @@ export function SingingPage() {
             engineDefault={false}
             ariaLabel={t('convert.target_voice')}
             placeholder={t('convert.pick_voice')}
+            menuPortal
           />
         </section>
 
@@ -171,6 +178,7 @@ export function SingingPage() {
             ariaLabel={t('singingWorkspace.engine_kicker')}
             placeholder={t('singingWorkspace.choose_engine')}
             disabled={!compatibleEngines.length}
+            menuPortal
           />
           {!engines.isLoading && !compatibleEngines.length && (
             <p role="status" className="text-sm text-muted-foreground">

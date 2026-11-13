@@ -32,8 +32,8 @@ vi.mock('@/components/audio-preview-button', () => ({
   ),
 }));
 vi.mock('@shared/components/VoiceSelector', () => ({
-  default: ({ value, onChange, profiles, ariaLabel }: any) => (
-    <select aria-label={ariaLabel} value={value} onChange={(e) => onChange(e.target.value)}>
+  default: ({ value, onChange, profiles, ariaLabel, menuPortal }: any) => (
+    <select aria-label={ariaLabel} data-menu-portal={String(Boolean(menuPortal))} value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="" />
       {profiles.map((p: Profile) => (
         <option key={p.id} value={p.id}>
@@ -44,9 +44,10 @@ vi.mock('@shared/components/VoiceSelector', () => ({
   ),
 }));
 vi.mock('@shared/components/SearchableSelect', () => ({
-  default: ({ value, onChange, options, ariaLabel, disabled }: any) => (
+  default: ({ value, onChange, options, ariaLabel, disabled, menuPortal }: any) => (
     <select
       aria-label={ariaLabel}
+      data-menu-portal={String(Boolean(menuPortal))}
       value={value}
       disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
@@ -200,4 +201,50 @@ it('shows the engine/consent-gated error when preview rendering fails', async ()
   );
 
   expect(await screen.findByRole('alert')).toHaveTextContent(/singing_conversion/);
+});
+
+it('portals both select menus out of the scrolling workspace', async () => {
+  // Review P1: an inline menu is clipped by the workspace's overflow-y-auto container.
+  mock.listEngines.mockResolvedValue([ENGINE]);
+  mount();
+  await waitFor(() => expect(mock.listEngines).toHaveBeenCalled());
+  expect(screen.getByLabelText('Target voice', { selector: 'select' })).toHaveAttribute(
+    'data-menu-portal',
+    'true',
+  );
+  expect(screen.getByLabelText('Engine', { selector: 'select' })).toHaveAttribute(
+    'data-menu-portal',
+    'true',
+  );
+});
+
+it('discards an analysis that finishes after a different guide vocal was chosen', async () => {
+  // Review P2: guide A's late result must not appear under guide B's filename.
+  mock.listEngines.mockResolvedValue([ENGINE]);
+  let finishFirst!: (result: SingingAnalyzeResult) => void;
+  mock.analyze.mockReturnValue(
+    new Promise<SingingAnalyzeResult>((resolve) => {
+      finishFirst = resolve;
+    }),
+  );
+  mount();
+  await waitFor(() => expect(mock.listEngines).toHaveBeenCalled());
+  uploadGuideVocal('first.wav');
+  fireEvent.click(screen.getByRole('button', { name: /^analyze$/i }));
+  await waitFor(() => expect(mock.analyze).toHaveBeenCalledTimes(1));
+
+  uploadGuideVocal('second.wav');
+  await act(async () => {
+    finishFirst({
+      project_id: 'first',
+      guide_audio_url: '/singing/projects/first/audio/guide',
+      guide_f0: [{ time_seconds: 0, frequency_hz: 220, voiced: true }],
+      voiced_segments: [{ start_seconds: 0, end_seconds: 0.1 }],
+    });
+  });
+
+  expect(screen.getByText('second.wav')).toBeInTheDocument();
+  expect(screen.queryByRole('img', { name: /pitch/i })).not.toBeInTheDocument();
+  expect(screen.queryByTestId('singing-original')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /^analyze$/i })).toBeEnabled();
 });

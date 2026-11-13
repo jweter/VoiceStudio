@@ -12,6 +12,7 @@ nothing here needs RVC, or any other real engine, installed.
 """
 from __future__ import annotations
 
+import asyncio
 import io
 import time
 import uuid
@@ -165,6 +166,50 @@ def test_analyze_rejects_a_non_wav_upload(client) -> None:
         files={"guide_vocal": ("guide.txt", b"not audio", "text/plain")},
     )
     assert response.status_code == 400
+
+
+def _off_event_loop(real, seen: list[bool]):
+    """Wrap a service call so it records whether it ran on a thread with no running event loop."""
+
+    def wrapper(*args, **kwargs):
+        try:
+            asyncio.get_running_loop()
+            seen.append(False)
+        except RuntimeError:
+            seen.append(True)
+        return real(*args, **kwargs)
+
+    return wrapper
+
+
+def test_analyze_runs_pitch_extraction_off_the_event_loop(client, monkeypatch: pytest.MonkeyPatch) -> None:
+    # Review P1: a whole-song analysis on the loop thread froze every other request.
+    seen: list[bool] = []
+    monkeypatch.setattr(
+        singing_router, "analyze_guide_vocal", _off_event_loop(singing_router.analyze_guide_vocal, seen)
+    )
+    response = client.post(
+        "/singing/analyze",
+        files={"guide_vocal": ("guide.wav", _wav_bytes(), "audio/wav")},
+    )
+    assert response.status_code == 200
+    assert seen == [True]
+
+
+def test_preview_renders_off_the_event_loop(
+    client, target_voice_profile, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: list[bool] = []
+    monkeypatch.setattr(
+        singing_router, "render_preview", _off_event_loop(singing_router.render_preview, seen)
+    )
+    response = client.post(
+        "/singing/preview",
+        files={"guide_vocal": ("guide.wav", _wav_bytes(), "audio/wav")},
+        data={"engine_id": _FakeSingingEngine.id, "target_voice_profile_id": target_voice_profile},
+    )
+    assert response.status_code == 200
+    assert seen == [True]
 
 
 # ── POST /singing/preview ────────────────────────────────────────────────
