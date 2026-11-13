@@ -6,9 +6,9 @@ import type { Profile } from '@/lib/api/types';
 import type { SingingEngine, SingingAnalyzeResult, SingingPreviewResult } from '@/lib/api/singing';
 
 const mock = vi.hoisted(() => ({
-  listEngines: vi.fn<[], Promise<SingingEngine[]>>(),
-  analyze: vi.fn<unknown[], Promise<SingingAnalyzeResult>>(),
-  preview: vi.fn<unknown[], Promise<SingingPreviewResult>>(),
+  listEngines: vi.fn<() => Promise<SingingEngine[]>>(),
+  analyze: vi.fn<(...args: unknown[]) => Promise<SingingAnalyzeResult>>(),
+  preview: vi.fn<(...args: unknown[]) => Promise<SingingPreviewResult>>(),
 }));
 vi.mock('@/lib/api/singing', () => ({
   listSingingEngines: mock.listEngines,
@@ -31,7 +31,6 @@ vi.mock('@/components/audio-preview-button', () => ({
     <div data-testid={source}>{src}</div>
   ),
 }));
-// @ts-expect-error untyped test double matching the shared JSX component's props
 vi.mock('@shared/components/VoiceSelector', () => ({
   default: ({ value, onChange, profiles, ariaLabel }: any) => (
     <select aria-label={ariaLabel} value={value} onChange={(e) => onChange(e.target.value)}>
@@ -44,7 +43,6 @@ vi.mock('@shared/components/VoiceSelector', () => ({
     </select>
   ),
 }));
-// @ts-expect-error untyped test double matching the shared JSX component's props
 vi.mock('@shared/components/SearchableSelect', () => ({
   default: ({ value, onChange, options, ariaLabel, disabled }: any) => (
     <select
