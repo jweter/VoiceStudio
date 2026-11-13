@@ -145,6 +145,8 @@ GET /setup/download-stream
 GET /setup/preflight
 GET /setup/recommendations
 GET /setup/status
+GET /singing/engines
+GET /singing/projects/{project_id}/audio/{which}
 GET /startup/progress
 GET /stats/usage
 GET /sysinfo
@@ -274,6 +276,8 @@ POST /pronunciation
 POST /pronunciation/import
 POST /pronunciation/test
 POST /setup/warmup
+POST /singing/analyze
+POST /singing/preview
 POST /stories/encode
 POST /system/crash/ack
 POST /system/diagnostic-bundle
