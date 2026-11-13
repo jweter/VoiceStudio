@@ -3196,5 +3196,28 @@
     "addingVoice": "음성 추가 중…",
     "engineDefault": "엔진 기본값",
     "preview": "음성 미리보기"
+  },
+  "singingWorkspace": {
+    "title": "노래",
+    "mode_convert": "기존 보컬 변환하기",
+    "mode_synthesize_later": "가사와 멜로디로 생성 (추후 지원)",
+    "guide_vocal_kicker": "가이드 보컬",
+    "choose_guide_vocal": "가이드 보컬 선택(WAV)…",
+    "unsupported_audio": "해당 파일은 WAV가 아닙니다. 노래 분석에는 현재 16비트 PCM WAV 가이드 보컬이 필요합니다.",
+    "engine_kicker": "엔진",
+    "choose_engine": "노래 변환을 지원하는 엔진 선택…",
+    "no_compatible_engine": "노래 변환을 지원하는 엔진이 아직 설치되지 않아 '미리 듣기 생성'이 비활성화되어 있습니다.",
+    "consent_text": "사용 권한이 있는 목소리만 복제하거나 변환하세요. 모델 라이선스는 VoiceStudio 앱 라이선스와 별개이며 상업적 이용 제한이 있을 수 있습니다.",
+    "analyze": "분석",
+    "generate_preview": "미리 듣기 생성",
+    "ab_kicker": "A/B",
+    "original": "원본",
+    "converted": "변환됨",
+    "pitch_trace_kicker": "피치 추적",
+    "pitch_trace_label": "가이드 피치와 변환된 출력 피치의 비교",
+    "pitch_trace_empty": "가이드 보컬을 분석하면 피치 추적을 볼 수 있습니다.",
+    "pitch_trace_guide": "가이드 F0",
+    "pitch_trace_output": "출력 F0",
+    "engine_provenance": "{{engine}}({{version}})로 렌더링됨"
   }
 }

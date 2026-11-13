@@ -3196,5 +3196,28 @@
     "addingVoice": "音声を追加中…",
     "engineDefault": "エンジンのデフォルト",
     "preview": "プレビュー音声"
+  },
+  "singingWorkspace": {
+    "title": "歌唱",
+    "mode_convert": "既存の歌声を変換する",
+    "mode_synthesize_later": "歌詞とメロディーから生成（今後対応）",
+    "guide_vocal_kicker": "ガイドボーカル",
+    "choose_guide_vocal": "ガイドボーカルを選択（WAV）…",
+    "unsupported_audio": "そのファイルは WAV ではありません。歌唱分析には現在 16 ビット PCM WAV のガイドボーカルが必要です。",
+    "engine_kicker": "エンジン",
+    "choose_engine": "歌唱変換に対応したエンジンを選択…",
+    "no_compatible_engine": "歌唱変換に対応したエンジンがまだインストールされていないため、「プレビューを生成」は無効になっています。",
+    "consent_text": "使用権限のある声のみをクローン・変換してください。モデルのライセンスは VoiceStudio アプリのライセンスとは別であり、商用利用に制限がある場合があります。",
+    "analyze": "分析",
+    "generate_preview": "プレビューを生成",
+    "ab_kicker": "A/B比較",
+    "original": "オリジナル",
+    "converted": "変換後",
+    "pitch_trace_kicker": "ピッチトレース",
+    "pitch_trace_label": "ガイドのピッチと変換後出力のピッチの比較",
+    "pitch_trace_empty": "ガイドボーカルを分析するとピッチトレースが表示されます。",
+    "pitch_trace_guide": "ガイド F0",
+    "pitch_trace_output": "出力 F0",
+    "engine_provenance": "{{engine}}（{{version}}）でレンダリング"
   }
 }

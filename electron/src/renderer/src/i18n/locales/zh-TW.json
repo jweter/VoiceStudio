@@ -3196,5 +3196,28 @@
     "addingVoice": "正在新增聲音…",
     "engineDefault": "引擎預設",
     "preview": "預覽語音"
+  },
+  "singingWorkspace": {
+    "title": "演唱",
+    "mode_convert": "轉換現有演唱錄音",
+    "mode_synthesize_later": "依歌詞與旋律生成（即將推出）",
+    "guide_vocal_kicker": "引導人聲",
+    "choose_guide_vocal": "選擇引導人聲（WAV）…",
+    "unsupported_audio": "該檔案不是 WAV 格式。演唱分析目前需要 16 位 PCM WAV 引導人聲。",
+    "engine_kicker": "引擎",
+    "choose_engine": "選擇支援演唱轉換的引擎…",
+    "no_compatible_engine": "目前沒有已安裝的引擎支援演唱轉換，因此「生成預覽」已停用。",
+    "consent_text": "僅複製或轉換你有權使用的聲音。模型授權與 VoiceStudio 應用程式授權是分開的，可能適用商業使用限制。",
+    "analyze": "分析",
+    "generate_preview": "生成預覽",
+    "ab_kicker": "A/B 比對",
+    "original": "原始",
+    "converted": "轉換後",
+    "pitch_trace_kicker": "音高軌跡",
+    "pitch_trace_label": "引導音高與轉換輸出音高的比對",
+    "pitch_trace_empty": "分析引導人聲以查看其音高軌跡。",
+    "pitch_trace_guide": "引導 F0",
+    "pitch_trace_output": "輸出 F0",
+    "engine_provenance": "使用 {{engine}}（{{version}}）渲染"
   }
 }

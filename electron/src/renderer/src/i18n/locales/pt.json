@@ -3198,5 +3198,28 @@
     "addingVoice": "Adicionando voz…",
     "engineDefault": "Padrão do mecanismo",
     "preview": "Visualizar voz"
+  },
+  "singingWorkspace": {
+    "title": "Canto",
+    "mode_convert": "Converter um vocal existente",
+    "mode_synthesize_later": "Gerar a partir de letra e melodia (em breve)",
+    "guide_vocal_kicker": "Vocal-guia",
+    "choose_guide_vocal": "Escolha um vocal-guia (WAV)…",
+    "unsupported_audio": "Esse arquivo não é WAV. A análise de canto atualmente exige um vocal-guia WAV PCM de 16 bits.",
+    "engine_kicker": "Mecanismo",
+    "choose_engine": "Escolha um mecanismo de conversão de canto…",
+    "no_compatible_engine": "Nenhum mecanismo instalado ainda suporta conversão de canto, então \"Gerar pré-visualização\" está desativado.",
+    "consent_text": "Clone ou converta apenas vozes que você tem permissão para usar. As licenças dos modelos são independentes da licença do aplicativo VoiceStudio e podem existir restrições de uso comercial.",
+    "analyze": "Analisar",
+    "generate_preview": "Gerar pré-visualização",
+    "ab_kicker": "A/B",
+    "original": "Original",
+    "converted": "Convertido",
+    "pitch_trace_kicker": "Traço de tom",
+    "pitch_trace_label": "Tom do guia comparado ao tom da saída convertida",
+    "pitch_trace_empty": "Analise um vocal-guia para ver o traço de tom.",
+    "pitch_trace_guide": "F0 do guia",
+    "pitch_trace_output": "F0 da saída",
+    "engine_provenance": "Renderizado com {{engine}} ({{version}})"
   }
 }

@@ -3196,5 +3196,28 @@
     "addingVoice": "Stem toevoegen…",
     "engineDefault": "Standaard motor",
     "preview": "Voorbeeldstem"
+  },
+  "singingWorkspace": {
+    "title": "Zang",
+    "mode_convert": "Bestaande zang converteren",
+    "mode_synthesize_later": "Genereren uit tekst en melodie (komt later)",
+    "guide_vocal_kicker": "Gidsvocaal",
+    "choose_guide_vocal": "Kies een gidsvocaal (WAV)…",
+    "unsupported_audio": "Dat bestand is geen WAV. Zanganalyse vereist nu een 16-bit PCM WAV-gidsvocaal.",
+    "engine_kicker": "Engine",
+    "choose_engine": "Kies een engine voor zangconversie…",
+    "no_compatible_engine": "Geen geïnstalleerde engine ondersteunt nog zangconversie, dus \"Voorbeeld genereren\" is uitgeschakeld.",
+    "consent_text": "Kloon of converteer alleen stemmen die je mag gebruiken. Modellicenties staan los van de VoiceStudio-applicatielicentie en er kunnen beperkingen voor commercieel gebruik gelden.",
+    "analyze": "Analyseren",
+    "generate_preview": "Voorbeeld genereren",
+    "ab_kicker": "A/B",
+    "original": "Origineel",
+    "converted": "Geconverteerd",
+    "pitch_trace_kicker": "Toonhoogteverloop",
+    "pitch_trace_label": "Toonhoogte van de gids vergeleken met de toonhoogte van de geconverteerde uitvoer",
+    "pitch_trace_empty": "Analyseer een gidsvocaal om het toonhoogteverloop te zien.",
+    "pitch_trace_guide": "Gids F0",
+    "pitch_trace_output": "Uitvoer F0",
+    "engine_provenance": "Weergegeven met {{engine}} ({{version}})"
   }
 }

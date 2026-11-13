@@ -90,6 +90,7 @@ def dub_seg_path(job_id, seg_id):
         raise ValueError(f"dub segment path escapes DUB_DIR: {job_id!r}/{seg_id!r}")
     return full
 PREVIEW_DIR = os.path.join(DATA_DIR, "preview")
+SINGING_DIR = os.path.join(DATA_DIR, "singing_projects")  # Singing Mode S5 workspace projects (docs/projects/singing-mode.md)
 CRASH_LOG_PATH = os.path.join(DATA_DIR, "crash_log.txt")   # only written on unhandled exceptions
 LOG_PATH = os.path.join(DATA_DIR, "omnivoice.log")          # rolling runtime log — what the Settings UI reads
 
@@ -97,7 +98,7 @@ IDLE_TIMEOUT_SECONDS = int(os.environ.get("OMNIVOICE_IDLE_TIMEOUT", "900"))
 CPU_POOL_WORKERS = int(os.environ.get("OMNIVOICE_CPU_POOL", "0")) or min(8, (os.cpu_count() or 4))
 
 def ensure_dirs():
-    for d in [DATA_DIR, VOICES_DIR, OUTPUTS_DIR, DUB_DIR, PREVIEW_DIR]:
+    for d in [DATA_DIR, VOICES_DIR, OUTPUTS_DIR, DUB_DIR, PREVIEW_DIR, SINGING_DIR]:
         os.makedirs(d, exist_ok=True)
 
 ensure_dirs()

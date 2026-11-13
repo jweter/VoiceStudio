@@ -3204,5 +3204,28 @@
     "addingVoice": "جارٍ إضافة الصوت…",
     "engineDefault": "المحرك الافتراضي",
     "preview": "معاينة الصوت"
+  },
+  "singingWorkspace": {
+    "title": "الغناء",
+    "mode_convert": "تحويل أداء غنائي حالي",
+    "mode_synthesize_later": "إنشاء من كلمات ولحن (قريبًا)",
+    "guide_vocal_kicker": "الصوت المرجعي",
+    "choose_guide_vocal": "اختر صوتًا مرجعيًا (WAV)…",
+    "unsupported_audio": "هذا الملف ليس بصيغة WAV. يتطلب تحليل الغناء حاليًا صوتًا مرجعيًا بصيغة WAV PCM 16-بت.",
+    "engine_kicker": "المحرك",
+    "choose_engine": "اختر محرك تحويل غناء…",
+    "no_compatible_engine": "لا يوجد محرك مثبَّت يدعم تحويل الغناء حتى الآن، لذلك تم تعطيل \"إنشاء معاينة\".",
+    "consent_text": "استخدم النسخ أو التحويل فقط للأصوات التي لديك إذن باستخدامها. ترخيص النماذج مستقل عن ترخيص تطبيق VoiceStudio، وقد تنطبق قيود على الاستخدام التجاري.",
+    "analyze": "تحليل",
+    "generate_preview": "إنشاء معاينة",
+    "ab_kicker": "مقارنة A/B",
+    "original": "الأصلي",
+    "converted": "المحوَّل",
+    "pitch_trace_kicker": "مخطط طبقة الصوت",
+    "pitch_trace_label": "طبقة صوت المرجع مقارنة بطبقة صوت المخرجات المحوَّلة",
+    "pitch_trace_empty": "حلّل صوتًا مرجعيًا لرؤية مخطط طبقة الصوت.",
+    "pitch_trace_guide": "F0 المرجعي",
+    "pitch_trace_output": "F0 المخرجات",
+    "engine_provenance": "تمت المعالجة باستخدام {{engine}} ({{version}})"
   }
 }

@@ -24,4 +24,5 @@ export const queryKeys = {
   history: ['history'] as const,
   engines: ['engines'] as const,
   systemInfo: ['system', 'info'] as const,
+  singingEngines: ['singing', 'engines'] as const,
 };

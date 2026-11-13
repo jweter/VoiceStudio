@@ -11,6 +11,7 @@ const SECONDARY_ROUTES = new Set([
   '/personas',
   '/projects',
   '/dub',
+  '/sing',
   '/design',
   '/transcriptions',
   '/calls',
