@@ -147,8 +147,10 @@ export function WorkspaceSidebar() {
             className="absolute inset-y-0 right-0 z-20 w-2 cursor-col-resize touch-none outline-none hover:bg-primary/15 focus-visible:bg-primary/30"
           />
           {/* Navigation first, like the compact rail: it stays at a fixed
-              position under the header instead of riding the library's height. */}
-          <div className="min-w-0 shrink-0 border-b border-border/50">
+              position under the header instead of riding the library's height.
+              Capped so a long workspace list scrolls internally instead of
+              squeezing the library panel below it to nothing on a short window. */}
+          <div className="min-w-0 max-h-[45vh] shrink-0 overflow-y-auto border-b border-border/50">
             <WorkspaceNavigation />
           </div>
           <VoicesSidebar key={libraryTab} initialTab={libraryTab} />
