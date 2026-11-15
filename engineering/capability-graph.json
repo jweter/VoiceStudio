@@ -387,7 +387,7 @@
         },
         {
           "id": "s5-singing-workspace-ui",
-          "state": "PLANNED",
+          "state": "VERIFIED_COMPLETE",
           "capability_level": 4,
           "depends_on": [
             "s5-analyze-and-preview-service"
@@ -399,6 +399,198 @@
             "Licensing and consent text from docs/projects/singing-mode.md is shown before a conversion, and the workspace refuses to run with an incompatible or missing engine with a clear message",
             "Frontend and API behaviour are covered by the repository's native tests; the audible judgments listed under Human Product Reality checks are recorded PENDING, not claimed",
             "Every user-facing string goes through i18n and is present, translated, in all locale files under electron/src/shared/i18n/locales; new selects use SearchableSelect and voice choices reuse VoiceSelector, per AGENTS.md",
+            "Canonical preflight, required CI checks and review pass at the exact head"
+          ],
+          "allowed_paths": [
+            "electron/**",
+            "backend/**",
+            "tests/**",
+            "docs/**"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ],
+          "runner_requirements": [
+            "code",
+            "local",
+            "offline"
+          ],
+          "runtime_requirements": [],
+          "verification": [
+            "Delivered at the baseline by PR #33, merged 2026-11-15 as b1cf5c29 (current HEAD): electron/src/renderer/src/features/singing/singing-page.tsx renders the Singing workspace (guide-vocal chooser, VoiceSelector target-voice picker, SearchableSelect compatible-engine picker both with menuPortal, a consent checkbox gating Generate, Analyze/Generate preview buttons, an Original|Converted A/B control via AudioPreviewButton, and PitchTraceChart showing guide F0 vs output F0) wired only to electron/src/renderer/src/lib/api/singing.ts (listSingingEngines/analyzeGuideVocal/renderSingingPreview), which calls backend/api/routers/singing.py's dedicated /singing/engines, /singing/analyze, /singing/preview and /singing/projects/{id}/audio/{which} routes -- never /generate.",
+            "electron/src/renderer/src/routes/index.ts defines singingRoute at path '/sing'; electron/src/renderer/src/components/app-shell/use-workspace-sidebar.ts and workspace-menu.tsx list '/sing' beside the other workspace routes with the singingWorkspace.title label, confirming it appears next to Clone/Dub/Design.",
+            "electron/src/renderer/src/features/singing/singing-page.test.tsx (6 tests: disables Generate until guide+voice+engine+consent are all set, refuses when no engine supports singing conversion, renders the pitch trace and A/B playback after analyze/generate, shows the engine-refusal error, portals both selects, and discards a stale analysis after the guide vocal changes) and tests/backend/api/test_singing_api.py (router contract tests against a fake engine registered with singing_capabilities={'singing_conversion'}, so nothing requires RVC installed).",
+            "electron/src/renderer/src/i18n/locales/*.json (all 21 locale files, including en.json) carry the singingWorkspace.* keys (title, consent_text, analyze, generate_preview, ab_kicker, pitch_trace_kicker, no_compatible_engine, etc.); backend/api/routers/singing.py's module docstring records it is 'kept deliberately separate from /generate and every other speech endpoint'.",
+            "Not shown by this record: rendering or exporting the full (unbounded) converted vocal -- only the bounded preview excerpt exists -- and the Human Product Reality listening checks, which remain PENDING. These are tracked by the new s5-full-render-codec-args, s5-full-render-duration-bound, s5-full-render-service and s5-export-ui slices below."
+          ]
+        },
+        {
+          "id": "s5-full-render-codec-args",
+          "state": "PLANNED",
+          "capability_level": 1,
+          "depends_on": [],
+          "objective": "Return the ffmpeg audio codec arguments for a singing-export container format, matching VoiceStudio's existing dub-export codec table (wav -> ['-c:a','pcm_s16le'], m4a -> ['-c:a','aac','-b:a','192k'], mp3 -> ['-c:a','libmp3lame','-q:a','2'], flac -> ['-c:a','flac']). Match the format name case-insensitively with surrounding whitespace ignored; any other value, including empty, non-string-like or unrecognized input, falls back to the m4a codec args so a bad export request can never build a broken ffmpeg command. The function is total and never raises.",
+          "acceptance": [
+            "wav, m4a, mp3 and flac each return their documented codec argument list",
+            "format matching ignores case and surrounding whitespace",
+            "any unrecognized, empty or non-string-like value returns the m4a codec args instead of raising",
+            "repository-native tests cover every documented format plus the fallback, and no existing speech or dub-export behavior changes"
+          ],
+          "allowed_paths": [
+            "backend/services/singing_export_format.py",
+            "tests/backend/services/test_singing_export_format.py"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ],
+          "runner_requirements": [
+            "code",
+            "local",
+            "offline"
+          ],
+          "runtime_requirements": [],
+          "acceptance_examples": [
+            {
+              "call": "singing_export_codec_args('wav')",
+              "expected": ["-c:a", "pcm_s16le"],
+              "why": "wav maps to the lossless PCM codec args"
+            },
+            {
+              "call": "singing_export_codec_args('MP3')",
+              "expected": ["-c:a", "libmp3lame", "-q:a", "2"],
+              "why": "format matching is case-insensitive"
+            },
+            {
+              "call": "singing_export_codec_args(' flac ')",
+              "expected": ["-c:a", "flac"],
+              "why": "surrounding whitespace is ignored"
+            },
+            {
+              "call": "singing_export_codec_args('ogg')",
+              "expected": ["-c:a", "aac", "-b:a", "192k"],
+              "why": "an unrecognized format falls back to the m4a codec args instead of raising"
+            }
+          ]
+        },
+        {
+          "id": "s5-full-render-duration-bound",
+          "state": "PLANNED",
+          "capability_level": 1,
+          "depends_on": [],
+          "objective": "Return None when guide_duration_seconds is positive, finite and at most max_seconds (the full-render duration cap); otherwise a short reason: 'Guide vocal duration must be positive.' if the duration is not positive, NaN or infinite; 'Full-render duration limit is not configured.' if max_seconds is not positive and finite; else 'Guide vocal is {guide_duration_seconds}s, longer than the {max_seconds}s full-render limit.'. Never raises.",
+          "acceptance": [
+            "a positive duration at or under the cap returns None",
+            "a non-positive, NaN or infinite duration is rejected with the fixed 'must be positive' message before the cap is even checked",
+            "a non-positive, NaN or infinite max_seconds is rejected with the fixed 'limit is not configured' message",
+            "a duration exceeding a validly configured cap returns the formatted over-limit message naming both values",
+            "repository-native tests cover every branch, and no existing behavior changes"
+          ],
+          "allowed_paths": [
+            "backend/services/singing_render_limits.py",
+            "tests/backend/services/test_singing_render_limits.py"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ],
+          "runner_requirements": [
+            "code",
+            "local",
+            "offline"
+          ],
+          "runtime_requirements": [],
+          "acceptance_examples": [
+            {
+              "call": "full_render_duration_error(120.0, 600.0)",
+              "expected": null,
+              "why": "120s is positive and within the 600s cap"
+            },
+            {
+              "call": "full_render_duration_error(700.0, 600.0)",
+              "expected": "Guide vocal is 700.0s, longer than the 600.0s full-render limit.",
+              "why": "700s exceeds the 600s cap"
+            },
+            {
+              "call": "full_render_duration_error(0.0, 600.0)",
+              "expected": "Guide vocal duration must be positive.",
+              "why": "a non-positive duration is rejected before checking the cap"
+            },
+            {
+              "call": "full_render_duration_error(120.0, 0.0)",
+              "expected": "Full-render duration limit is not configured.",
+              "why": "a non-positive max_seconds means the cap itself is invalid"
+            }
+          ]
+        },
+        {
+          "id": "s5-full-render-service",
+          "state": "PLANNED",
+          "capability_level": 3,
+          "depends_on": [
+            "s5-full-render-codec-args",
+            "s5-full-render-duration-bound",
+            "s5-analyze-and-preview-service"
+          ],
+          "objective": "Add a full-length (unbounded, unlike the 15-second render_preview excerpt) singing render to backend/services/ that runs convert_singing (services/singing_conversion.py) over the whole guide vocal, gated by full_render_duration_error (services/singing_render_limits.py) against a documented maximum, writing the result to the project's renders/vocal_full.wav (services/singing_project.py layout). Add POST /singing/render to backend/api/routers/singing.py to trigger it and GET /singing/projects/{project_id}/export/{format} to convert vocal_full.wav into wav/m4a/mp3/flac via ffmpeg using singing_export_codec_args (services/singing_export_format.py) and return it as a downloadable file with provenance and a correct Content-Disposition name, following the existing dub_export.py download/native-save convention. Roadmap: docs/OWNER_APPROVED_ROADMAP_2026-10-25.md Next slices item 3 (export).",
+          "acceptance": [
+            "a guide vocal within the configured cap renders completely (not bounded to render_preview's excerpt) through the S4 contract and is written to renders/vocal_full.wav",
+            "a guide vocal over the configured cap is refused with full_render_duration_error's message before any conversion runs",
+            "the export endpoint converts vocal_full.wav into the requested container using singing_export_codec_args and returns a downloadable file with a correct Content-Disposition name",
+            "an engine that does not declare singing_conversion, an unknown project id, or a non-WAV guide vocal is refused with a clear error",
+            "no network access and no speech-synthesis fallback; the default install and every existing test are unaffected when RVC is absent",
+            "repository-native tests cover each case using the S4 fake-engine shape; docs/STRUCTURE.md service count updated if a service file is added",
+            "Canonical preflight, required CI checks and review pass at the exact head"
+          ],
+          "allowed_paths": [
+            "backend/services/**",
+            "backend/api/routers/singing.py",
+            "tests/backend/**",
+            "docs/**"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ],
+          "runner_requirements": [
+            "code",
+            "local",
+            "offline"
+          ],
+          "runtime_requirements": []
+        },
+        {
+          "id": "s5-export-ui",
+          "state": "PLANNED",
+          "capability_level": 4,
+          "depends_on": [
+            "s5-full-render-service",
+            "s5-singing-workspace-ui"
+          ],
+          "objective": "In the Electron Singing workspace (electron/src/renderer/src/features/singing/singing-page.tsx), beside the existing Analyze/Generate-preview controls, add a 'Render full vocal' action and an export control that call the s5-full-render-service POST /singing/render and GET /singing/projects/{id}/export/{format} routes, let the user choose a wav/m4a/mp3/flac container and save the result to disk (reusing the app's existing native-save/download pattern), and surface full_render_duration_error's message when the guide vocal exceeds the configured cap instead of attempting the render. This completes the 'style selection, generation, preview, and export' workflow in docs/OWNER_APPROVED_ROADMAP_2026-10-25.md Next slices item 3. Keep the Human Product Reality listening checks from docs/projects/singing-mode.md recorded PENDING, not claimed.",
+          "acceptance": [
+            "The workspace offers a full-vocal render/export action distinct from the bounded Generate preview, driven only by the dedicated singing endpoints, never /generate",
+            "A guide vocal over the configured full-render duration cap shows the limit error and does not start a render",
+            "The user can choose an export container among wav/m4a/mp3/flac and save the exported file to disk",
+            "Frontend and API behaviour are covered by the repository's native tests; the audible judgments listed under Human Product Reality checks stay recorded PENDING, not claimed",
+            "Every new user-facing string goes through i18n and is present, translated, in all locale files under electron/src/renderer/src/i18n/locales (and electron/src/shared/i18n/locales for any shared-component strings), per AGENTS.md",
             "Canonical preflight, required CI checks and review pass at the exact head"
           ],
           "allowed_paths": [
