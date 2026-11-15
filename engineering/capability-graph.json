@@ -443,7 +443,8 @@
           ],
           "allowed_paths": [
             "backend/services/singing_export_format.py",
-            "tests/backend/services/test_singing_export_format.py"
+            "tests/backend/services/test_singing_export_format.py",
+            "docs/STRUCTURE.md"
           ],
           "forbidden_paths": [
             ".github/**",
@@ -497,7 +498,8 @@
           ],
           "allowed_paths": [
             "backend/services/singing_render_limits.py",
-            "tests/backend/services/test_singing_render_limits.py"
+            "tests/backend/services/test_singing_render_limits.py",
+            "docs/STRUCTURE.md"
           ],
           "forbidden_paths": [
             ".github/**",
