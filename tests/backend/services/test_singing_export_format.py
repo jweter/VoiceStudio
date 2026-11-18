@@ -50,6 +50,9 @@ def test_matching_ignores_case_and_surrounding_whitespace(container_format, expe
         [],
         {},
         object(),
+        bytearray(b"wav"),
+        bytearray(),
+        b"wav",
     ],
 )
 def test_unrecognized_or_non_string_input_falls_back_to_m4a(container_format):
