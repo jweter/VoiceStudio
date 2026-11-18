@@ -29,10 +29,7 @@ def singing_export_codec_args(container_format: object) -> list[str]:
     including an empty string, a value of the wrong type, or anything else
     unrecognized - falls back to the "m4a" args. This function never raises.
     """
-    try:
-        normalized = container_format.strip().lower()  # type: ignore[union-attr]
-    except AttributeError:
-        normalized = None
+    normalized = container_format.strip().lower() if isinstance(container_format, str) else None
 
     codec_args = SINGING_EXPORT_CODEC_ARGS.get(
         normalized, SINGING_EXPORT_CODEC_ARGS[_FALLBACK_FORMAT]
