@@ -12,11 +12,13 @@ codes.
     POST /singing/analyze                        -> guide vocal F0 track + voiced segments
     POST /singing/preview                        -> bounded conversion preview + pitch comparison
     POST /singing/render                         -> full render within server-owned duration cap
+    GET  /singing/projects/{project_id}/export/{format} -> offline finished vocal export
     GET  /singing/projects/{project_id}/audio/{which}  -> "guide" or "preview" WAV, for A/B playback
 """
 from __future__ import annotations
 
 import asyncio
+import os
 import uuid
 from pathlib import Path
 
@@ -24,11 +26,14 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
 from core.config import SINGING_DIR, SINGING_FULL_RENDER_MAX_SECONDS, VOICES_DIR
+from core.http_headers import content_disposition
 from core.db import db_conn
 from core.path_security import UnsafePath, resolve_within
 from services.singing_conversion import ConversionRequest, SingingConversionError
 from services.singing_pitch import F0Track
+from services.singing_export_format import SINGING_EXPORT_CODEC_ARGS, singing_export_codec_args
 from services.singing_full_render import render_full_singing
+from services.ffmpeg_utils import find_ffmpeg, run_ffmpeg
 from services.singing_preview import analyze_guide_vocal, compatible_singing_engines, render_preview
 from services.singing_project import create_singing_project, singing_project_paths
 
@@ -239,3 +244,95 @@ def project_audio(project_id: str, which: str) -> FileResponse:
     if not path.is_file():
         raise HTTPException(status_code=404, detail="Audio not found for this project.")
     return FileResponse(str(path), media_type="audio/wav")
+
+
+_EXPORT_MIME = {
+    "wav": "audio/wav",
+    "m4a": "audio/mp4",
+    "mp3": "audio/mpeg",
+    "flac": "audio/flac",
+}
+
+
+@router.get("/projects/{project_id}/export/{container_format}")
+async def export_full_render(project_id: str, container_format: str) -> FileResponse:
+    """Download a verified full singing render; transcode solely with local ffmpeg.
+
+    Exact allowlisting occurs before paths, commands or filenames are formed.
+    A per-project/per-format exclusive lock prevents duplicate transcodes;
+    the exported file is published atomically only after ffmpeg succeeds.
+    """
+    fmt = container_format.lower()
+    if fmt not in SINGING_EXPORT_CODEC_ARGS:
+        raise HTTPException(status_code=400, detail="Export format must be wav, m4a, mp3 or flac.")
+    layout = singing_project_paths(project_id)
+    if not layout:
+        raise HTTPException(status_code=400, detail="Invalid singing project id.")
+    root = Path(SINGING_DIR)
+    project = root / project_id
+    renders = root / layout["renders_dir"]
+    original = root / layout["vocal_full"]
+    if project.is_symlink() or renders.is_symlink() or original.is_symlink():
+        raise HTTPException(status_code=400, detail="Singing project contains an unsafe audio path.")
+    if not original.is_file():
+        raise HTTPException(status_code=404, detail="A verified full singing render is required before export.")
+    name = f"vocal_full.{fmt}"
+    if fmt == "wav":
+        return FileResponse(
+            str(original), media_type=_EXPORT_MIME[fmt],
+            headers={"Content-Disposition": content_disposition(name)},
+        )
+
+    finished = renders / name
+    if finished.is_symlink():
+        raise HTTPException(status_code=400, detail="Export output path is not safe.")
+    if finished.is_file():
+        return FileResponse(
+            str(finished), media_type=_EXPORT_MIME[fmt],
+            headers={"Content-Disposition": content_disposition(name)},
+        )
+    lock = renders / f".{name}.export.lock"
+    try:
+        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except FileExistsError as exc:
+        raise HTTPException(status_code=409, detail="Export is already running for this format.") from exc
+    except OSError as exc:
+        raise HTTPException(status_code=500, detail="Unable to reserve export output.") from exc
+    os.close(fd)
+
+    stage = renders / f".vocal_full.{uuid.uuid4().hex}.{fmt}"
+    try:
+        if finished.exists():
+            raise HTTPException(status_code=409, detail="Export output already exists.")
+        binary = find_ffmpeg()  # already-installed local binary; does not download models or media tools
+        if not binary:
+            raise HTTPException(status_code=503, detail="Local ffmpeg is not installed.")
+        cmd = [
+            binary, "-nostdin", "-hide_banner", "-loglevel", "error",
+            "-i", str(original), "-vn",
+            *singing_export_codec_args(fmt), str(stage),
+        ]
+        try:
+            result, _stdout, _stderr = await run_ffmpeg(cmd, timeout=1800.0)
+        except asyncio.TimeoutError as exc:
+            raise HTTPException(status_code=504, detail="Singing export timed out.") from exc
+        except OSError as exc:
+            raise HTTPException(status_code=502, detail="Local ffmpeg could not run.") from exc
+        if result != 0 or not stage.is_file() or stage.stat().st_size == 0:
+            raise HTTPException(status_code=502, detail="Local ffmpeg could not produce this format.")
+        try:
+            os.link(stage, finished)  # no-clobber publication only after successful encoding
+        except FileExistsError as exc:
+            raise HTTPException(status_code=409, detail="Export output already exists.") from exc
+        except OSError as exc:
+            raise HTTPException(status_code=500, detail="Unable to publish completed export.") from exc
+    finally:
+        try:
+            stage.unlink(missing_ok=True)
+        finally:
+            lock.unlink(missing_ok=True)
+
+    return FileResponse(
+        str(finished), media_type=_EXPORT_MIME[fmt],
+        headers={"Content-Disposition": content_disposition(name)},
+    )
