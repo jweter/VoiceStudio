@@ -91,6 +91,8 @@ def dub_seg_path(job_id, seg_id):
     return full
 PREVIEW_DIR = os.path.join(DATA_DIR, "preview")
 SINGING_DIR = os.path.join(DATA_DIR, "singing_projects")  # Singing Mode S5 workspace projects (docs/projects/singing-mode.md)
+# Server-owned maximum for a complete singing render, distinct from preview's 15s excerpt.
+SINGING_FULL_RENDER_MAX_SECONDS = 600.0  # 10 minutes; clients cannot override this safety limit
 CRASH_LOG_PATH = os.path.join(DATA_DIR, "crash_log.txt")   # only written on unhandled exceptions
 LOG_PATH = os.path.join(DATA_DIR, "omnivoice.log")          # rolling runtime log — what the Settings UI reads
 

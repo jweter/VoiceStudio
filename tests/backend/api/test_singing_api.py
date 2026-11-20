@@ -274,3 +274,98 @@ def test_audio_endpoint_404s_for_an_unknown_project_or_kind(client) -> None:
     project_id = response.json()["project_id"]
     assert client.get(f"/singing/projects/{project_id}/audio/preview").status_code == 404
     assert client.get(f"/singing/projects/{project_id}/audio/not-a-kind").status_code == 404
+
+
+# ── POST /singing/render: S5 full-length service ─────────────────────────
+
+
+def _project_with_full_guide() -> str:
+    from pathlib import Path
+    from services.singing_project import create_singing_project
+
+    project_id = f"test-{uuid.uuid4().hex}"
+    layout = create_singing_project(singing_router.SINGING_DIR, project_id)
+    assert layout
+    source = Path(singing_router.SINGING_DIR) / layout["source_dir"] / "guide_vocal.wav"
+    source.write_bytes(_wav_bytes(seconds=2.0))
+    return project_id
+
+
+def test_full_render_uses_existing_s4_engine_and_exposes_entire_wav(client, target_voice_profile) -> None:
+    project_id = _project_with_full_guide()
+    response = client.post(
+        "/singing/render",
+        data={
+            "project_id": project_id,
+            "engine_id": _FakeSingingEngine.id,
+            "target_voice_profile_id": target_voice_profile,
+        },
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["project_id"] == project_id
+    assert body["duration_seconds"] == pytest.approx(2.0)
+    assert body["guide_duration_seconds"] == pytest.approx(2.0)
+    assert body["within_tolerance"]
+    assert body["engine_id"] == _FakeSingingEngine.id
+    audio = client.get(body["render_audio_url"])
+    assert audio.status_code == 200
+    assert audio.headers["content-type"] == "audio/wav"
+    assert audio.content[:4] == b"RIFF"
+
+    # Already-published output must not be overwritten by a duplicate request.
+    second = client.post(
+        "/singing/render",
+        data={
+            "project_id": project_id,
+            "engine_id": _FakeSingingEngine.id,
+            "target_voice_profile_id": target_voice_profile,
+        },
+    )
+    assert second.status_code == 409
+
+
+def test_full_render_refuses_speech_only_engine_and_invalid_project(client, target_voice_profile) -> None:
+    project_id = _project_with_full_guide()
+    speech_only = client.post(
+        "/singing/render",
+        data={
+            "project_id": project_id,
+            "engine_id": _SpeechOnlyEngine.id,
+            "target_voice_profile_id": target_voice_profile,
+        },
+    )
+    assert speech_only.status_code == 400
+    assert "supports singing conversion" in speech_only.json()["detail"]
+    invalid = client.post(
+        "/singing/render",
+        data={
+            "project_id": "../outside",
+            "engine_id": _FakeSingingEngine.id,
+            "target_voice_profile_id": target_voice_profile,
+        },
+    )
+    assert invalid.status_code == 400
+
+
+def test_full_render_cap_is_server_owned_and_checked_before_engine_call(
+    client, target_voice_profile, monkeypatch,
+) -> None:
+    from pathlib import Path
+    from services.singing_project import singing_project_paths
+
+    project_id = _project_with_full_guide()
+    monkeypatch.setattr(singing_router, "SINGING_FULL_RENDER_MAX_SECONDS", 1.0)
+    response = client.post(
+        "/singing/render",
+        data={
+            "project_id": project_id,
+            "engine_id": _FakeSingingEngine.id,
+            "target_voice_profile_id": target_voice_profile,
+            "max_seconds": 50000,  # the server must ignore client-provided limits
+        },
+    )
+    assert response.status_code == 409
+    assert "longer than the 1.0s full-render limit" in response.json()["detail"]
+    layout = singing_project_paths(project_id)
+    assert not (Path(singing_router.SINGING_DIR) / layout["vocal_full"]).exists()
