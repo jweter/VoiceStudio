@@ -146,8 +146,8 @@ GET /setup/preflight
 GET /setup/recommendations
 GET /setup/status
 GET /singing/engines
-GET /singing/projects/{project_id}/export/{container_format}
 GET /singing/projects/{project_id}/audio/{which}
+GET /singing/projects/{project_id}/export/{container_format}
 GET /startup/progress
 GET /stats/usage
 GET /sysinfo
