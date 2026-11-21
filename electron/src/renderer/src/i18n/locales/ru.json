@@ -3222,6 +3222,11 @@
     "pitch_trace_empty": "Проанализируйте ведущий вокал, чтобы увидеть график высоты тона.",
     "pitch_trace_guide": "F0 ведущего вокала",
     "pitch_trace_output": "F0 результата",
-    "engine_provenance": "Создано с помощью {{engine}} ({{version}})"
+    "engine_provenance": "Создано с помощью {{engine}} ({{version}})",
+    "render_full": "Отрендерить полный вокал",
+    "full_render_kicker": "Рендер полного вокала",
+    "full_render_audio": "Полный вокал",
+    "export_kicker": "Экспорт",
+    "export_format_label": "Формат экспорта"
   }
 }

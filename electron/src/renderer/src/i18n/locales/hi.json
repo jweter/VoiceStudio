@@ -3218,6 +3218,11 @@
     "pitch_trace_empty": "पिच ट्रेस देखने के लिए गाइड वोकल का विश्लेषण करें।",
     "pitch_trace_guide": "गाइड F0",
     "pitch_trace_output": "आउटपुट F0",
-    "engine_provenance": "{{engine}} ({{version}}) से रेंडर किया गया"
+    "engine_provenance": "{{engine}} ({{version}}) से रेंडर किया गया",
+    "render_full": "पूरा वोकल रेंडर करें",
+    "full_render_kicker": "पूर्ण वोकल रेंडर",
+    "full_render_audio": "पूर्ण वोकल",
+    "export_kicker": "निर्यात",
+    "export_format_label": "निर्यात प्रारूप"
   }
 }

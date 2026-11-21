@@ -624,6 +624,117 @@
             "offline"
           ],
           "runtime_requirements": []
+        },
+        {
+          "id": "s5-full-render-cap-usage-percent",
+          "state": "PLANNED",
+          "capability_level": 1,
+          "depends_on": [],
+          "objective": "Return the percentage of the full-render duration cap consumed by a guide vocal, as a float rounded to one decimal place, clamped to the 0.0-100.0 range. A non-positive, NaN or infinite guide_duration_seconds returns 0.0. A non-positive, NaN or infinite max_seconds returns 0.0. A guide_duration_seconds at or below max_seconds returns (guide_duration_seconds / max_seconds) * 100 rounded to one decimal place. A guide_duration_seconds greater than max_seconds returns 100.0. Never raises.",
+          "acceptance": [
+            "a guide duration within the cap returns the exact percentage rounded to one decimal place",
+            "a guide duration at or beyond the cap returns exactly 100.0",
+            "a non-positive, NaN or infinite guide duration returns 0.0 regardless of the cap",
+            "a non-positive, NaN or infinite max_seconds returns 0.0 regardless of the guide duration",
+            "repository-native tests cover every branch, and no existing behavior changes"
+          ],
+          "allowed_paths": [
+            "backend/services/singing_render_progress.py",
+            "tests/backend/services/test_singing_render_progress.py",
+            "docs/STRUCTURE.md"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ],
+          "runner_requirements": [
+            "code",
+            "local",
+            "offline"
+          ],
+          "runtime_requirements": [],
+          "acceptance_examples": [
+            {
+              "call": "full_render_cap_usage_percent(100.0, 300.0)",
+              "expected": 33.3,
+              "why": "100s of a 300s cap is 33.33...%, rounded to one decimal place"
+            },
+            {
+              "call": "full_render_cap_usage_percent(700.0, 600.0)",
+              "expected": 100.0,
+              "why": "a guide vocal longer than the cap is reported as fully consuming it"
+            },
+            {
+              "call": "full_render_cap_usage_percent(0.0, 600.0)",
+              "expected": 0.0,
+              "why": "a non-positive duration is treated as using none of the cap"
+            },
+            {
+              "call": "full_render_cap_usage_percent(120.0, 0.0)",
+              "expected": 0.0,
+              "why": "an invalid (non-positive) cap can't be measured against, so usage is reported as zero"
+            }
+          ]
+        },
+        {
+          "id": "s5-singing-duration-display",
+          "state": "PLANNED",
+          "capability_level": 1,
+          "depends_on": [],
+          "objective": "Return a duration string formatted as M:SS, or as H:MM:SS once the duration reaches one hour. Round the input to the nearest whole second before formatting. Zero-pad seconds, and minutes when hours are shown, to two digits; the leading unit is never zero-padded. A negative, NaN, infinite or otherwise non-numeric value returns '0:00'. Never raises. Used to display guide and full-render vocal durations in the Singing workspace.",
+          "acceptance": [
+            "a duration under one minute returns 0:SS with seconds zero-padded",
+            "a duration of one minute or more and under one hour returns M:SS with minutes unpadded and seconds zero-padded",
+            "a duration of one hour or more returns H:MM:SS with hours unpadded and minutes/seconds zero-padded",
+            "fractional seconds round to the nearest whole second before formatting",
+            "a negative, NaN, infinite or non-numeric value returns '0:00' instead of raising",
+            "repository-native tests cover every branch, and no existing behavior changes"
+          ],
+          "allowed_paths": [
+            "backend/services/singing_duration_format.py",
+            "tests/backend/services/test_singing_duration_format.py",
+            "docs/STRUCTURE.md"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ],
+          "runner_requirements": [
+            "code",
+            "local",
+            "offline"
+          ],
+          "runtime_requirements": [],
+          "acceptance_examples": [
+            {
+              "call": "format_singing_duration(5.4)",
+              "expected": "0:05",
+              "why": "fractional seconds round to the nearest whole second and are zero-padded"
+            },
+            {
+              "call": "format_singing_duration(125.0)",
+              "expected": "2:05",
+              "why": "125s is 2 minutes 5 seconds; minutes are unpadded, seconds are zero-padded"
+            },
+            {
+              "call": "format_singing_duration(3661.0)",
+              "expected": "1:01:01",
+              "why": "one hour or more switches to H:MM:SS with zero-padded minutes and seconds"
+            },
+            {
+              "call": "format_singing_duration(-5.0)",
+              "expected": "0:00",
+              "why": "a negative duration is invalid input and falls back to 0:00 instead of raising"
+            }
+          ]
         }
       ]
     }

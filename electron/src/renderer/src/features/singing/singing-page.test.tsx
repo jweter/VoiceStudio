@@ -3,17 +3,32 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, expect, it, vi } from 'vitest';
 import '@/i18n';
 import type { Profile } from '@/lib/api/types';
-import type { SingingEngine, SingingAnalyzeResult, SingingPreviewResult } from '@/lib/api/singing';
+import type {
+  SingingEngine,
+  SingingAnalyzeResult,
+  SingingFullRenderResult,
+  SingingPreviewResult,
+} from '@/lib/api/singing';
 
 const mock = vi.hoisted(() => ({
   listEngines: vi.fn<() => Promise<SingingEngine[]>>(),
   analyze: vi.fn<(...args: unknown[]) => Promise<SingingAnalyzeResult>>(),
   preview: vi.fn<(...args: unknown[]) => Promise<SingingPreviewResult>>(),
+  renderFull: vi.fn<(...args: unknown[]) => Promise<SingingFullRenderResult>>(),
+  saveAudio: vi.fn(() => Promise.resolve({ canceled: true })),
 }));
 vi.mock('@/lib/api/singing', () => ({
   listSingingEngines: mock.listEngines,
   analyzeGuideVocal: mock.analyze,
   renderSingingPreview: mock.preview,
+  renderSingingFull: mock.renderFull,
+  singingExportRequest: (projectId: string, format: string) => ({
+    path: `/singing/projects/${projectId}/export/${format}`,
+    name: `voicestudio-singing-${projectId}.${format}`,
+  }),
+}));
+vi.mock('@/components/bridge', () => ({
+  getBridge: () => ({ files: { saveAudio: mock.saveAudio, revealPath: vi.fn() } }),
 }));
 vi.mock('@/components/app-shell/workspace-header', () => ({
   WorkspaceHeader: ({ children }: { children: React.ReactNode }) => <header>{children}</header>,
@@ -91,6 +106,9 @@ afterEach(() => {
   mock.listEngines.mockReset();
   mock.analyze.mockReset();
   mock.preview.mockReset();
+  mock.renderFull.mockReset();
+  mock.saveAudio.mockReset();
+  mock.saveAudio.mockResolvedValue({ canceled: true });
 });
 
 it('refuses to generate a preview when no engine supports singing conversion', async () => {
@@ -247,4 +265,91 @@ it('discards an analysis that finishes after a different guide vocal was chosen'
   expect(screen.queryByRole('img', { name: /pitch/i })).not.toBeInTheDocument();
   expect(screen.queryByTestId('singing-original')).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: /^analyze$/i })).toBeEnabled();
+});
+
+async function setUpProject() {
+  mock.listEngines.mockResolvedValue([ENGINE]);
+  mock.analyze.mockResolvedValue({
+    project_id: 'p1',
+    guide_audio_url: '/singing/projects/p1/audio/guide',
+    guide_f0: [{ time_seconds: 0, frequency_hz: 220, voiced: true }],
+    voiced_segments: [{ start_seconds: 0, end_seconds: 0.1 }],
+  });
+  mount();
+  await waitFor(() => expect(mock.listEngines).toHaveBeenCalled());
+  uploadGuideVocal();
+  fireEvent.change(screen.getByLabelText('Target voice', { selector: 'select' }), { target: { value: 'target-1' } });
+  fireEvent.change(screen.getByLabelText('Engine', { selector: 'select' }), { target: { value: 'fake-engine' } });
+  fireEvent.click(screen.getByRole('checkbox'));
+  await act(async () => fireEvent.click(screen.getByRole('button', { name: /^analyze$/i })));
+  await waitFor(() => expect(mock.analyze).toHaveBeenCalledTimes(1));
+}
+
+it('disables Render full vocal until a project, voice, engine and consent all exist', async () => {
+  mock.listEngines.mockResolvedValue([ENGINE]);
+  mount();
+  await waitFor(() => expect(mock.listEngines).toHaveBeenCalled());
+  const renderFullButton = screen.getByRole('button', { name: /render full vocal/i });
+  expect(renderFullButton).toBeDisabled();
+
+  uploadGuideVocal();
+  expect(renderFullButton).toBeDisabled(); // no project yet: analyze/preview has not run
+  fireEvent.change(screen.getByLabelText('Target voice', { selector: 'select' }), { target: { value: 'target-1' } });
+  fireEvent.change(screen.getByLabelText('Engine', { selector: 'select' }), { target: { value: 'fake-engine' } });
+  fireEvent.click(screen.getByRole('checkbox'));
+  expect(renderFullButton).toBeDisabled();
+
+  expect(mock.renderFull).not.toHaveBeenCalled();
+});
+
+it('renders the full vocal and lets the user export and save it to disk', async () => {
+  await setUpProject();
+  mock.renderFull.mockResolvedValue({
+    project_id: 'p1',
+    render_audio_url: '/singing/projects/p1/audio/full',
+    duration_seconds: 120,
+    guide_duration_seconds: 120,
+    within_tolerance: true,
+    engine_id: 'fake-engine',
+    engine_version: '0.0-test',
+    provenance: null,
+  });
+
+  const renderFullButton = screen.getByRole('button', { name: /render full vocal/i });
+  expect(renderFullButton).toBeEnabled();
+  await act(async () => fireEvent.click(renderFullButton));
+
+  expect(mock.renderFull).toHaveBeenCalledWith('p1', 'fake-engine', 'target-1');
+  expect(await screen.findByTestId('singing-full-render')).toHaveTextContent(
+    '/api/singing/projects/p1/audio/full',
+  );
+
+  const mp3Button = screen.getByRole('button', { name: 'MP3' });
+  fireEvent.click(mp3Button);
+  expect(mp3Button).toHaveAttribute('aria-pressed', 'true');
+
+  fireEvent.click(screen.getByRole('button', { name: /save as/i }));
+  await waitFor(() =>
+    expect(mock.saveAudio).toHaveBeenCalledWith({
+      url: '/api/singing/projects/p1/export/mp3',
+      suggestedName: 'voicestudio-singing-p1.mp3',
+    }),
+  );
+});
+
+it('shows the full-render duration-cap error instead of starting a render', async () => {
+  await setUpProject();
+  mock.renderFull.mockRejectedValue(
+    new Error('Guide vocal is 700.0s, longer than the 600.0s full-render limit.'),
+  );
+
+  await act(async () =>
+    fireEvent.click(screen.getByRole('button', { name: /render full vocal/i })),
+  );
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    /longer than the 600.0s full-render limit/,
+  );
+  expect(screen.queryByTestId('singing-full-render')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /save as/i })).not.toBeInTheDocument();
 });

@@ -3218,6 +3218,11 @@
     "pitch_trace_empty": "วิเคราะห์เสียงนำทางเพื่อดูกราฟระดับเสียง",
     "pitch_trace_guide": "F0 เสียงนำทาง",
     "pitch_trace_output": "F0 ผลลัพธ์",
-    "engine_provenance": "เรนเดอร์ด้วย {{engine}} ({{version}})"
+    "engine_provenance": "เรนเดอร์ด้วย {{engine}} ({{version}})",
+    "render_full": "เรนเดอร์เสียงร้องแบบเต็ม",
+    "full_render_kicker": "การเรนเดอร์เสียงร้องแบบเต็ม",
+    "full_render_audio": "เสียงร้องแบบเต็ม",
+    "export_kicker": "ส่งออก",
+    "export_format_label": "รูปแบบการส่งออก"
   }
 }

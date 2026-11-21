@@ -3218,6 +3218,11 @@
     "pitch_trace_empty": "가이드 보컬을 분석하면 피치 추적을 볼 수 있습니다.",
     "pitch_trace_guide": "가이드 F0",
     "pitch_trace_output": "출력 F0",
-    "engine_provenance": "{{engine}}({{version}})로 렌더링됨"
+    "engine_provenance": "{{engine}}({{version}})로 렌더링됨",
+    "render_full": "전체 보컬 렌더링",
+    "full_render_kicker": "전체 보컬 렌더링",
+    "full_render_audio": "전체 보컬",
+    "export_kicker": "내보내기",
+    "export_format_label": "내보내기 형식"
   }
 }

@@ -3218,6 +3218,11 @@
     "pitch_trace_empty": "Perde izini görmek için bir kılavuz vokali analiz edin.",
     "pitch_trace_guide": "Kılavuz F0",
     "pitch_trace_output": "Çıkış F0",
-    "engine_provenance": "{{engine}} ({{version}}) ile oluşturuldu"
+    "engine_provenance": "{{engine}} ({{version}}) ile oluşturuldu",
+    "render_full": "Tam vokali oluştur",
+    "full_render_kicker": "Tam vokal oluşturma",
+    "full_render_audio": "Tam vokal",
+    "export_kicker": "Dışa aktar",
+    "export_format_label": "Dışa aktarma biçimi"
   }
 }

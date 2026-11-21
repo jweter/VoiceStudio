@@ -3220,6 +3220,11 @@
     "pitch_trace_empty": "Analise um vocal-guia para ver o traço de tom.",
     "pitch_trace_guide": "F0 do guia",
     "pitch_trace_output": "F0 da saída",
-    "engine_provenance": "Renderizado com {{engine}} ({{version}})"
+    "engine_provenance": "Renderizado com {{engine}} ({{version}})",
+    "render_full": "Renderizar vocal completo",
+    "full_render_kicker": "Renderização do vocal completo",
+    "full_render_audio": "Vocal completo",
+    "export_kicker": "Exportar",
+    "export_format_label": "Formato de exportação"
   }
 }

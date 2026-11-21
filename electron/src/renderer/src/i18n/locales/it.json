@@ -3220,6 +3220,11 @@
     "pitch_trace_empty": "Analizza una voce guida per vedere la traccia dell'intonazione.",
     "pitch_trace_guide": "F0 guida",
     "pitch_trace_output": "F0 output",
-    "engine_provenance": "Renderizzato con {{engine}} ({{version}})"
+    "engine_provenance": "Renderizzato con {{engine}} ({{version}})",
+    "render_full": "Renderizza la voce completa",
+    "full_render_kicker": "Rendering della voce completa",
+    "full_render_audio": "Voce completa",
+    "export_kicker": "Esporta",
+    "export_format_label": "Formato di esportazione"
   }
 }

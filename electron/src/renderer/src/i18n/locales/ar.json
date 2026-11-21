@@ -3226,6 +3226,11 @@
     "pitch_trace_empty": "حلّل صوتًا مرجعيًا لرؤية مخطط طبقة الصوت.",
     "pitch_trace_guide": "F0 المرجعي",
     "pitch_trace_output": "F0 المخرجات",
-    "engine_provenance": "تمت المعالجة باستخدام {{engine}} ({{version}})"
+    "engine_provenance": "تمت المعالجة باستخدام {{engine}} ({{version}})",
+    "render_full": "توليد الصوت الغنائي الكامل",
+    "full_render_kicker": "توليد الصوت الغنائي الكامل",
+    "full_render_audio": "الصوت الكامل",
+    "export_kicker": "تصدير",
+    "export_format_label": "صيغة التصدير"
   }
 }

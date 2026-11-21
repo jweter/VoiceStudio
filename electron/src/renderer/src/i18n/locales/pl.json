@@ -3222,6 +3222,11 @@
     "pitch_trace_empty": "Przeanalizuj wokal wzorcowy, aby zobaczyć wykres wysokości tonu.",
     "pitch_trace_guide": "F0 wzorca",
     "pitch_trace_output": "F0 wyjścia",
-    "engine_provenance": "Wyrenderowano za pomocą {{engine}} ({{version}})"
+    "engine_provenance": "Wyrenderowano za pomocą {{engine}} ({{version}})",
+    "render_full": "Renderuj pełny wokal",
+    "full_render_kicker": "Pełny render wokalu",
+    "full_render_audio": "Pełny wokal",
+    "export_kicker": "Eksport",
+    "export_format_label": "Format eksportu"
   }
 }

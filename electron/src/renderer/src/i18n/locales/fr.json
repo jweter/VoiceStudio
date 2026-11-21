@@ -3220,6 +3220,11 @@
     "pitch_trace_empty": "Analysez une voix guide pour voir son tracé de hauteur.",
     "pitch_trace_guide": "F0 guide",
     "pitch_trace_output": "F0 de sortie",
-    "engine_provenance": "Généré avec {{engine}} ({{version}})"
+    "engine_provenance": "Généré avec {{engine}} ({{version}})",
+    "render_full": "Générer le chant complet",
+    "full_render_kicker": "Rendu du chant complet",
+    "full_render_audio": "Chant complet",
+    "export_kicker": "Exporter",
+    "export_format_label": "Format d'export"
   }
 }

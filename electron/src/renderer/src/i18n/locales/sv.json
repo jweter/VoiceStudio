@@ -3218,6 +3218,11 @@
     "pitch_trace_empty": "Analysera en guidesång för att se dess tonhöjdsspår.",
     "pitch_trace_guide": "Guide F0",
     "pitch_trace_output": "Utdata F0",
-    "engine_provenance": "Renderad med {{engine}} ({{version}})"
+    "engine_provenance": "Renderad med {{engine}} ({{version}})",
+    "render_full": "Rendera fullständig sång",
+    "full_render_kicker": "Rendering av fullständig sång",
+    "full_render_audio": "Fullständig sång",
+    "export_kicker": "Exportera",
+    "export_format_label": "Exportformat"
   }
 }
