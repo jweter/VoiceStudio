@@ -325,7 +325,8 @@ Only after deterministic checks pass:
 - [x] S3 — F0/pitch-analysis service with golden fixtures (cents error, voiced/unvoiced agreement, octave-error rate, voiced segments; fixtures are synthesized in code).
 - [ ] S4 — First local singing voice-conversion adapter.
 - [ ] S5 — Singing workspace: guide vocal + target voice + preview.
-  - Headless full-render service and POST `/singing/render` API: complete guide up to the **server-owned 600-second (10-minute) maximum**, never the preview 15-second excerpt. GET `/singing/projects/{project_id}/audio/full` serves the WAV. Export formats and audible product acceptance are still pending.
+  - Headless full-render service and POST `/singing/render` API: complete guide up to the **server-owned 600-second (10-minute) maximum**, never the preview 15-second excerpt. GET `/singing/projects/{project_id}/audio/full` serves the WAV.
+  - Offline export API GET `/singing/projects/{project_id}/export/{container_format}` supports WAV/M4A/MP3/FLAC through the local ffmpeg tool, with atomic validated publication and Content-Disposition attachment naming. Audible product acceptance remains pending.
 - [ ] S6 — A/B playback + pitch comparison.
 - [ ] S7 — Batch/resume + provenance metadata.
 - [ ] S8 — API/MCP singing conversion endpoint.

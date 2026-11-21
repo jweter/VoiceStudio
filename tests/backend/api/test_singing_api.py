@@ -369,3 +369,148 @@ def test_full_render_cap_is_server_owned_and_checked_before_engine_call(
     assert "longer than the 1.0s full-render limit" in response.json()["detail"]
     layout = singing_project_paths(project_id)
     assert not (Path(singing_router.SINGING_DIR) / layout["vocal_full"]).exists()
+
+
+# ── GET /singing/projects/{project_id}/export/{format}: local-only S5 export ────
+
+
+def _finished_vocal_project() -> str:
+    from pathlib import Path
+
+    from services.singing_project import singing_project_paths
+
+    project_id = _project_with_full_guide()
+    layout = singing_project_paths(project_id)
+    (Path(singing_router.SINGING_DIR) / layout["vocal_full"]).write_bytes(_wav_bytes())
+    return project_id
+
+
+def test_singing_wav_export_returns_the_verified_full_render_without_ffmpeg(client, monkeypatch) -> None:
+    project_id = _finished_vocal_project()
+    monkeypatch.setattr(singing_router, "find_ffmpeg", lambda: pytest.fail("ffmpeg needed for WAV"))
+    response = client.get(f"/singing/projects/{project_id}/export/wav")
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "audio/wav"
+    assert "vocal_full.wav" in response.headers["content-disposition"]
+    assert response.content[:4] == b"RIFF"
+
+
+@pytest.mark.parametrize("fmt,codec", [
+    ("m4a", ["-c:a", "aac", "-b:a", "192k"]),
+    ("mp3", ["-c:a", "libmp3lame", "-q:a", "2"]),
+    ("flac", ["-c:a", "flac"]),
+])
+def test_singing_local_export_transcodes_once_and_publishes_validated_format(
+    client, monkeypatch, fmt, codec,
+) -> None:
+    from pathlib import Path
+
+    from services.singing_project import singing_project_paths
+
+    project_id = _finished_vocal_project()
+    layout = singing_project_paths(project_id)
+    renders = Path(singing_router.SINGING_DIR) / layout["renders_dir"]
+    calls = []
+
+    async def fake_ffmpeg(cmd, timeout):
+        calls.append(cmd)
+        assert cmd[cmd.index("-vn") + 1: -1] == codec
+        assert cmd[-1].endswith(f".{fmt}")
+        Path(cmd[-1]).write_bytes(b"offline-encoded-output")
+        assert not (renders / f"vocal_full.{fmt}").exists()
+        return 0, b"", b""
+
+    monkeypatch.setattr(singing_router, "find_ffmpeg", lambda: "ffmpeg")
+    monkeypatch.setattr(singing_router, "run_ffmpeg", fake_ffmpeg)
+    response = client.get(f"/singing/projects/{project_id}/export/{fmt}")
+    assert response.status_code == 200, response.text
+    assert response.content == b"offline-encoded-output"
+    assert f"vocal_full.{fmt}" in response.headers["content-disposition"]
+    assert (renders / f"vocal_full.{fmt}").is_file()
+    assert sorted(p.name for p in renders.iterdir()) == [f"vocal_full.{fmt}", "vocal_full.wav"]
+    again = client.get(f"/singing/projects/{project_id}/export/{fmt}")
+    assert again.status_code == 200
+    assert len(calls) == 1
+
+
+def test_invalid_singing_export_format_and_missing_verified_audio_are_rejected(client, monkeypatch) -> None:
+    project_id = _project_with_full_guide()
+    monkeypatch.setattr(singing_router, "find_ffmpeg", lambda: pytest.fail("ffmpeg should not run"))
+    assert client.get(f"/singing/projects/{project_id}/export/mp3").status_code == 404
+    assert client.get(f"/singing/projects/{project_id}/export/../../etc").status_code != 200
+    assert client.get(f"/singing/projects/{project_id}/export/aac").status_code == 400
+    assert client.get("/singing/projects/../export/mp3").status_code != 200
+
+
+def test_failed_singing_export_is_not_published_and_can_be_retried(client, monkeypatch) -> None:
+    from pathlib import Path
+
+    from services.singing_project import singing_project_paths
+
+    project_id = _finished_vocal_project()
+    renders = Path(singing_router.SINGING_DIR) / singing_project_paths(project_id)["renders_dir"]
+
+    async def bad_ffmpeg(cmd, timeout):
+        Path(cmd[-1]).write_bytes(b"incomplete")
+        return 1, b"", b"ffmpeg failed"
+
+    monkeypatch.setattr(singing_router, "find_ffmpeg", lambda: "ffmpeg")
+    monkeypatch.setattr(singing_router, "run_ffmpeg", bad_ffmpeg)
+    response = client.get(f"/singing/projects/{project_id}/export/mp3")
+    assert response.status_code == 502
+    assert sorted(p.name for p in renders.iterdir()) == ["vocal_full.wav"]
+
+
+def test_export_lock_prevents_concurrent_same_format_writes(client, monkeypatch) -> None:
+    from pathlib import Path
+
+    from services.singing_project import singing_project_paths
+
+    project_id = _finished_vocal_project()
+    renders = Path(singing_router.SINGING_DIR) / singing_project_paths(project_id)["renders_dir"]
+    lock = renders / ".vocal_full.mp3.export.lock"
+    lock.touch()
+    monkeypatch.setattr(singing_router, "find_ffmpeg", lambda: pytest.fail("lock must block ffmpeg"))
+    response = client.get(f"/singing/projects/{project_id}/export/mp3")
+    assert response.status_code == 409
+    assert lock.exists()  # never steal an owner lock
+
+
+def test_singing_export_rejects_symlinked_completed_audio(client, monkeypatch) -> None:
+    """A verified WAV cannot be replaced with a symlink, even to another project-local WAV."""
+    from pathlib import Path
+    from services.singing_project import singing_project_paths
+
+    project_id = _finished_vocal_project()
+    renders = Path(singing_router.SINGING_DIR) / singing_project_paths(project_id)["renders_dir"]
+    original = renders / "vocal_full.wav"
+    renamed = renders / "other.wav"
+    original.rename(renamed)
+    try:
+        original.symlink_to(renamed)
+    except (NotImplementedError, OSError):
+        pytest.skip("Filesystem symlinks are unavailable to this test process")
+    monkeypatch.setattr(singing_router, "find_ffmpeg", lambda: pytest.fail("unsafe file reached ffmpeg"))
+    response = client.get(f"/singing/projects/{project_id}/export/wav")
+    assert response.status_code == 400
+    assert renamed.read_bytes().startswith(b"RIFF")
+
+
+def test_singing_export_rejects_symlinked_existing_output(client, monkeypatch) -> None:
+    """An attacker-controlled export symlink must not serve a different artifact."""
+    from pathlib import Path
+    from services.singing_project import singing_project_paths
+
+    project_id = _finished_vocal_project()
+    renders = Path(singing_router.SINGING_DIR) / singing_project_paths(project_id)["renders_dir"]
+    other = renders / "other.mp3"
+    other.write_bytes(b"wrong audio, never serve")
+    output = renders / "vocal_full.mp3"
+    try:
+        output.symlink_to(other)
+    except (NotImplementedError, OSError):
+        pytest.skip("Filesystem symlinks are unavailable to this test process")
+    monkeypatch.setattr(singing_router, "find_ffmpeg", lambda: pytest.fail("unsafe file reached ffmpeg"))
+    response = client.get(f"/singing/projects/{project_id}/export/mp3")
+    assert response.status_code == 400
+    assert other.read_bytes() == b"wrong audio, never serve"
