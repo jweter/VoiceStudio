@@ -3218,6 +3218,11 @@
     "pitch_trace_empty": "Phân tích giọng hát dẫn để xem đường cao độ.",
     "pitch_trace_guide": "F0 giọng dẫn",
     "pitch_trace_output": "F0 đầu ra",
-    "engine_provenance": "Được dựng bằng {{engine}} ({{version}})"
+    "engine_provenance": "Được dựng bằng {{engine}} ({{version}})",
+    "render_full": "Dựng giọng hát đầy đủ",
+    "full_render_kicker": "Bản dựng giọng hát đầy đủ",
+    "full_render_audio": "Giọng hát đầy đủ",
+    "export_kicker": "Xuất",
+    "export_format_label": "Định dạng xuất"
   }
 }

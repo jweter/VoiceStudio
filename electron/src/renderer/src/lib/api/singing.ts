@@ -67,3 +67,40 @@ export async function renderSingingPreview(
   body.append('target_voice_profile_id', targetVoiceProfileId);
   return apiJson<SingingPreviewResult>('/singing/preview', { method: 'POST', body, signal });
 }
+
+export interface SingingFullRenderResult {
+  project_id: string;
+  render_audio_url: string;
+  duration_seconds: number;
+  guide_duration_seconds: number;
+  within_tolerance: boolean;
+  engine_id: string;
+  engine_version: string;
+  provenance: Record<string, string> | null;
+}
+
+export async function renderSingingFull(
+  projectId: string,
+  engineId: string,
+  targetVoiceProfileId: string,
+  signal?: AbortSignal,
+): Promise<SingingFullRenderResult> {
+  const body = new FormData();
+  body.append('project_id', projectId);
+  body.append('engine_id', engineId);
+  body.append('target_voice_profile_id', targetVoiceProfileId);
+  return apiJson<SingingFullRenderResult>('/singing/render', { method: 'POST', body, signal });
+}
+
+export type SingingExportFormat = 'wav' | 'm4a' | 'mp3' | 'flac';
+
+/** Download path + a safe suggested filename for a project's finished full render. */
+export function singingExportRequest(
+  projectId: string,
+  format: SingingExportFormat,
+): { path: string; name: string } {
+  return {
+    path: `/singing/projects/${encodeURIComponent(projectId)}/export/${format}`,
+    name: `voicestudio-singing-${projectId.replace(/[^a-zA-Z0-9_-]/g, '_')}.${format}`,
+  };
+}

@@ -3222,6 +3222,11 @@
     "pitch_trace_empty": "分析引导人声以查看其音高轨迹。",
     "pitch_trace_guide": "引导 F0",
     "pitch_trace_output": "输出 F0",
-    "engine_provenance": "使用 {{engine}}（{{version}}）渲染"
+    "engine_provenance": "使用 {{engine}}（{{version}}）渲染",
+    "render_full": "渲染完整人声",
+    "full_render_kicker": "完整人声渲染",
+    "full_render_audio": "完整人声",
+    "export_kicker": "导出",
+    "export_format_label": "导出格式"
   }
 }

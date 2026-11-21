@@ -3218,6 +3218,11 @@
     "pitch_trace_empty": "Analyze a guide vocal to see its pitch trace.",
     "pitch_trace_guide": "Guide F0",
     "pitch_trace_output": "Output F0",
-    "engine_provenance": "Rendered with {{engine}} ({{version}})"
+    "engine_provenance": "Rendered with {{engine}} ({{version}})",
+    "render_full": "Render full vocal",
+    "full_render_kicker": "Full vocal render",
+    "full_render_audio": "Full vocal",
+    "export_kicker": "Export",
+    "export_format_label": "Export format"
   }
 }

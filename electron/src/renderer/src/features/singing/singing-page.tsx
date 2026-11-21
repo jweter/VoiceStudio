@@ -1,18 +1,23 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { MicVocalIcon, PlayIcon, LoaderCircleIcon, PlayCircleIcon } from 'lucide-react';
+import { MicVocalIcon, PlayIcon, LoaderCircleIcon, PlayCircleIcon, AudioLinesIcon } from 'lucide-react';
 import { WorkspaceHeader } from '@/components/app-shell/workspace-header';
 import { Button } from '@/components/ui/button';
 import { AudioPreviewButton } from '@/components/audio-preview-button';
+import { SaveAudioButton } from '@/components/save-audio-button';
 import { useProfiles } from '@/hooks/use-profiles';
 import { apiPath, describeError } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query';
 import {
   analyzeGuideVocal,
   listSingingEngines,
+  renderSingingFull,
   renderSingingPreview,
+  singingExportRequest,
   type SingingAnalyzeResult,
+  type SingingExportFormat,
+  type SingingFullRenderResult,
   type SingingPreviewResult,
 } from '@/lib/api/singing';
 import { PitchTraceChart } from './pitch-trace-chart';
@@ -25,6 +30,8 @@ import SearchableSelect from '@shared/components/SearchableSelect';
 function isWavFile(file: File): boolean {
   return file.type === 'audio/wav' || file.type === 'audio/x-wav' || /\.wav$/i.test(file.name);
 }
+
+const EXPORT_FORMATS: SingingExportFormat[] = ['wav', 'm4a', 'mp3', 'flac'];
 
 export function SingingPage() {
   const { t } = useTranslation();
@@ -43,8 +50,12 @@ export function SingingPage() {
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [analysis, setAnalysis] = useState<SingingAnalyzeResult | null>(null);
   const [preview, setPreview] = useState<SingingPreviewResult | null>(null);
+  const [projectId, setProjectId] = useState('');
+  const [fullRender, setFullRender] = useState<SingingFullRenderResult | null>(null);
+  const [exportFormat, setExportFormat] = useState<SingingExportFormat>('wav');
   const [analyzing, setAnalyzing] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [rendering, setRendering] = useState(false);
   const [error, setError] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
   // Bumped on every new guide vocal: a request started for an earlier guide must not
@@ -60,6 +71,8 @@ export function SingingPage() {
     setError('');
     setAnalysis(null);
     setPreview(null);
+    setProjectId('');
+    setFullRender(null);
     setGuideFile(file);
     setGuideObjectUrl((previous) => {
       if (previous) URL.revokeObjectURL(previous);
@@ -76,6 +89,15 @@ export function SingingPage() {
     consentAccepted &&
     !analyzing &&
     !generating;
+  const canRenderFull =
+    Boolean(projectId) &&
+    Boolean(targetVoiceId) &&
+    Boolean(engineId) &&
+    compatibleEngines.some((entry) => entry.id === engineId) &&
+    consentAccepted &&
+    !analyzing &&
+    !generating &&
+    !rendering;
 
   const runAnalyze = async () => {
     if (!guideFile || !canAnalyze) return;
@@ -84,7 +106,10 @@ export function SingingPage() {
     setError('');
     try {
       const result = await analyzeGuideVocal(guideFile);
-      if (generation === guideGeneration.current) setAnalysis(result);
+      if (generation === guideGeneration.current) {
+        setAnalysis(result);
+        setProjectId(result.project_id);
+      }
     } catch (err) {
       if (generation === guideGeneration.current) setError(describeError(err));
     } finally {
@@ -99,7 +124,10 @@ export function SingingPage() {
     setError('');
     try {
       const result = await renderSingingPreview(guideFile, engineId, targetVoiceId);
-      if (generation === guideGeneration.current) setPreview(result);
+      if (generation === guideGeneration.current) {
+        setPreview(result);
+        setProjectId(result.project_id);
+      }
     } catch (err) {
       if (generation === guideGeneration.current) setError(describeError(err));
     } finally {
@@ -107,9 +135,27 @@ export function SingingPage() {
     }
   };
 
+  const runRenderFull = async () => {
+    if (!projectId || !canRenderFull) return;
+    const generation = guideGeneration.current;
+    setRendering(true);
+    setError('');
+    try {
+      const result = await renderSingingFull(projectId, engineId, targetVoiceId);
+      if (generation === guideGeneration.current) setFullRender(result);
+    } catch (err) {
+      if (generation === guideGeneration.current) setError(describeError(err));
+    } finally {
+      setRendering(false);
+    }
+  };
+
   const guideF0 = preview?.guide_f0 ?? analysis?.guide_f0 ?? [];
   const backendGuideAudioUrl = preview?.guide_audio_url ?? analysis?.guide_audio_url ?? null;
   const guideAudioSrc = backendGuideAudioUrl ? apiPath(backendGuideAudioUrl) : guideObjectUrl;
+  const exportRequest = fullRender
+    ? singingExportRequest(fullRender.project_id, exportFormat)
+    : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -219,6 +265,14 @@ export function SingingPage() {
             )}
             {t('singingWorkspace.generate_preview')}
           </Button>
+          <Button variant="outline" disabled={!canRenderFull} onClick={() => void runRenderFull()}>
+            {rendering ? (
+              <LoaderCircleIcon className="animate-spin motion-reduce:animate-none" />
+            ) : (
+              <AudioLinesIcon />
+            )}
+            {t('singingWorkspace.render_full')}
+          </Button>
         </div>
 
         {(analysis || preview) && (
@@ -262,6 +316,56 @@ export function SingingPage() {
                 })}
               </p>
             )}
+          </section>
+        )}
+
+        {fullRender && (
+          <section
+            className="space-y-4 border-t border-border/60 pt-4"
+            aria-label={t('singingWorkspace.full_render_kicker')}
+          >
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">{t('singingWorkspace.full_render_kicker')}</h3>
+              <div className="flex items-center gap-4">
+                <span className="flex items-center gap-2 text-sm">
+                  <AudioPreviewButton
+                    src={apiPath(fullRender.render_audio_url)}
+                    source="singing-full-render"
+                  />
+                  {t('singingWorkspace.full_render_audio')}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {t('singingWorkspace.engine_provenance', {
+                  engine: fullRender.engine_id,
+                  version: fullRender.engine_version,
+                })}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">{t('singingWorkspace.export_kicker')}</h3>
+              <div
+                className="flex flex-wrap gap-1"
+                role="group"
+                aria-label={t('singingWorkspace.export_format_label')}
+              >
+                {EXPORT_FORMATS.map((format) => (
+                  <Button
+                    key={format}
+                    size="xs"
+                    variant={exportFormat === format ? 'secondary' : 'ghost'}
+                    aria-pressed={exportFormat === format}
+                    onClick={() => setExportFormat(format)}
+                  >
+                    {format.toUpperCase()}
+                  </Button>
+                ))}
+              </div>
+              <SaveAudioButton
+                url={exportRequest ? apiPath(exportRequest.path) : undefined}
+                suggestedName={exportRequest?.name ?? ''}
+              />
+            </div>
           </section>
         )}
       </div>

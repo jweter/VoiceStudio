@@ -327,6 +327,7 @@ Only after deterministic checks pass:
 - [ ] S5 — Singing workspace: guide vocal + target voice + preview.
   - Headless full-render service and POST `/singing/render` API: complete guide up to the **server-owned 600-second (10-minute) maximum**, never the preview 15-second excerpt. GET `/singing/projects/{project_id}/audio/full` serves the WAV.
   - Offline export API GET `/singing/projects/{project_id}/export/{container_format}` supports WAV/M4A/MP3/FLAC through the local ffmpeg tool, with atomic validated publication and Content-Disposition attachment naming. Audible product acceptance remains pending.
+  - Electron Singing workspace (`electron/src/renderer/src/features/singing/singing-page.tsx`) adds a "Render full vocal" action and an export control (WAV/M4A/MP3/FLAC) driven only by `POST /singing/render` and `GET /singing/projects/{project_id}/export/{format}`, reusing the app's native-save/download pattern (`SaveAudioButton`). A guide vocal over the configured cap surfaces the server's limit error instead of starting a render. Human Product Reality listening checks below remain PENDING.
 - [ ] S6 — A/B playback + pitch comparison.
 - [ ] S7 — Batch/resume + provenance metadata.
 - [ ] S8 — API/MCP singing conversion endpoint.
