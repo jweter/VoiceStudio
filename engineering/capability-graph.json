@@ -540,7 +540,7 @@
         },
         {
           "id": "s5-full-render-service",
-          "state": "PLANNED",
+          "state": "VERIFIED_COMPLETE",
           "capability_level": 3,
           "depends_on": [
             "s5-full-render-codec-args",
@@ -576,7 +576,16 @@
             "local",
             "offline"
           ],
-          "runtime_requirements": []
+          "runtime_requirements": [],
+          "verification": [
+            "Already delivered at the baseline (dd921001, PR #39 and its ancestors #37/#38) -- no rebuild needed. backend/services/singing_full_render.py's render_full_singing() runs the whole guide vocal through the existing S4 convert_singing contract (services/singing_conversion.py), first checking services/singing_render_limits.py's full_render_duration_error() against a caller-supplied max_seconds and refusing with its message (InvalidConversionRequest) before any conversion starts, then stages the S4 output and publishes it to the project's renders/vocal_full.wav (services/singing_project.py layout) via a no-clobber atomic hardlink guarded by a filesystem-exclusive lock, so a guide vocal within the cap renders completely and an over-cap one is refused pre-conversion.",
+            "backend/api/routers/singing.py adds POST /singing/render (calls render_full_singing with the server-owned SINGING_FULL_RENDER_MAX_SECONDS from core.config, never a client-supplied limit; re-validates the engine via the same compatible_singing_engines/_resolve_engine catalogue check used by /singing/preview, 404s an unknown project id, and surfaces InvalidConversionRequest as 409) and GET /singing/projects/{project_id}/export/{container_format} (validates the format against services/singing_export_format.py's SINGING_EXPORT_CODEC_ARGS, resolves and containment-checks every path with core.path_security.resolve_within rejecting symlink aliases, runs local ffmpeg with singing_export_codec_args(fmt) only when a verified vocal_full.wav exists, publishes the transcode atomically with a per-format exclusive lock + no-clobber hardlink, and returns FileResponse with Content-Disposition built by core.http_headers.content_disposition -- the same download convention backend/api/routers/dub_export.py uses).",
+            "tests/backend/services/test_singing_full_render.py (8 tests: publishes only the S4-verified whole song and refuses a second render once vocal_full.wav exists; every (cap, expected) duration-limit branch from singing_render_limits refuses before convert_singing is ever called; wrong output_name and a non-WAV guide are refused pre-engine; a rejected/invalid S4 output and a failed atomic-publish hardlink leave no public or private artifact; concurrent requests never double-write or serve a partial final file).",
+            "tests/backend/api/test_singing_api.py's POST /singing/render and export sections (test_full_render_uses_existing_s4_engine_and_exposes_entire_wav, test_full_render_refuses_speech_only_engine_and_invalid_project, test_full_render_cap_is_server_owned_and_checked_before_engine_call, test_singing_wav_export_returns_the_verified_full_render_without_ffmpeg, test_singing_local_export_transcodes_once_and_publishes_validated_format [m4a/mp3/flac parametrized], test_invalid_singing_export_format_and_missing_verified_audio_are_rejected, test_failed_singing_export_is_not_published_and_can_be_retried, test_export_lock_prevents_concurrent_same_format_writes, test_singing_export_rejects_symlinked_completed_audio, test_singing_export_rejects_symlinked_existing_output) exercise every acceptance criterion end-to-end against the S4 fake-engine shape (_FakeSingingEngine / _SpeechOnlyEngine registered into services.tts_backend._REGISTRY), with no network access and no speech-synthesis fallback.",
+            "backend/services/singing_render_limits.py (full_render_duration_error) and backend/services/singing_export_format.py (singing_export_codec_args, SINGING_EXPORT_CODEC_ARGS) already exist with their own unit suites (tests/backend/services/test_singing_render_limits.py, tests/backend/services/test_singing_export_format.py), satisfying this slice's dependencies.",
+            "docs/STRUCTURE.md's 'services/ 98 modules' count already matches the current backend/services/*.py file count (including singing_full_render.py, singing_render_limits.py, singing_export_format.py), so no count update was needed.",
+            "Not rebuilt by this record: no files were changed for this slice beyond this capability-graph entry, per the 'already delivered at baseline' instruction."
+          ]
         },
         {
           "id": "s5-export-ui",
