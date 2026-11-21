@@ -268,12 +268,25 @@ async def export_full_render(project_id: str, container_format: str) -> FileResp
     layout = singing_project_paths(project_id)
     if not layout:
         raise HTTPException(status_code=400, detail="Invalid singing project id.")
-    root = Path(SINGING_DIR)
-    project = root / project_id
-    renders = root / layout["renders_dir"]
-    original = root / layout["vocal_full"]
-    if project.is_symlink() or renders.is_symlink() or original.is_symlink():
-        raise HTTPException(status_code=400, detail="Singing project contains an unsafe audio path.")
+    # The project id is client-supplied; use the shared containment boundary
+    # for every path before any filesystem access, including derived artifacts.
+    # Checking the resulting shape also refuses symlink aliases *within* root.
+    root = Path(SINGING_DIR).resolve(strict=False)
+    try:
+        project = resolve_within(root, project_id)
+        renders = resolve_within(root, layout["renders_dir"])
+        original = resolve_within(root, layout["vocal_full"])
+        if (
+            project.name != project_id
+            or project.parent != root
+            or renders.parent != project
+            or renders.name != "renders"
+            or original.parent != renders
+            or original.name != "vocal_full.wav"
+        ):
+            raise UnsafePath("unexpected singing project layout or symlink")
+    except UnsafePath as exc:
+        raise HTTPException(status_code=400, detail="Singing project contains an unsafe audio path.") from exc
     if not original.is_file():
         raise HTTPException(status_code=404, detail="A verified full singing render is required before export.")
     name = f"vocal_full.{fmt}"
@@ -283,15 +296,24 @@ async def export_full_render(project_id: str, container_format: str) -> FileResp
             headers={"Content-Disposition": content_disposition(name)},
         )
 
-    finished = renders / name
-    if finished.is_symlink():
-        raise HTTPException(status_code=400, detail="Export output path is not safe.")
+    try:
+        finished = resolve_within(renders, name)
+        if finished.parent != renders or finished.name != name:
+            raise UnsafePath("export output aliases another file")
+    except UnsafePath as exc:
+        raise HTTPException(status_code=400, detail="Export output path is not safe.") from exc
     if finished.is_file():
         return FileResponse(
             str(finished), media_type=_EXPORT_MIME[fmt],
             headers={"Content-Disposition": content_disposition(name)},
         )
-    lock = renders / f".{name}.export.lock"
+    try:
+        lock_name = f".{name}.export.lock"
+        lock = resolve_within(renders, lock_name)
+        if lock.parent != renders or lock.name != lock_name:
+            raise UnsafePath("export lock aliases another file")
+    except UnsafePath as exc:
+        raise HTTPException(status_code=400, detail="Export lock path is not safe.") from exc
     try:
         fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
     except FileExistsError as exc:
@@ -300,7 +322,14 @@ async def export_full_render(project_id: str, container_format: str) -> FileResp
         raise HTTPException(status_code=500, detail="Unable to reserve export output.") from exc
     os.close(fd)
 
-    stage = renders / f".vocal_full.{uuid.uuid4().hex}.{fmt}"
+    try:
+        stage_name = f".vocal_full.{uuid.uuid4().hex}.{fmt}"
+        stage = resolve_within(renders, stage_name)
+        if stage.parent != renders or stage.name != stage_name:
+            raise UnsafePath("export stage aliases another file")
+    except UnsafePath as exc:
+        lock.unlink(missing_ok=True)
+        raise HTTPException(status_code=400, detail="Export staging path is not safe.") from exc
     try:
         if finished.exists():
             raise HTTPException(status_code=409, detail="Export output already exists.")
