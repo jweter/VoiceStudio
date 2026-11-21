@@ -97,7 +97,8 @@ export function SingingPage() {
     consentAccepted &&
     !analyzing &&
     !generating &&
-    !rendering;
+    !rendering &&
+    !fullRender;
 
   const runAnalyze = async () => {
     if (!guideFile || !canAnalyze) return;
@@ -109,6 +110,7 @@ export function SingingPage() {
       if (generation === guideGeneration.current) {
         setAnalysis(result);
         setProjectId(result.project_id);
+        setFullRender(null);
       }
     } catch (err) {
       if (generation === guideGeneration.current) setError(describeError(err));
@@ -127,6 +129,7 @@ export function SingingPage() {
       if (generation === guideGeneration.current) {
         setPreview(result);
         setProjectId(result.project_id);
+        setFullRender(null);
       }
     } catch (err) {
       if (generation === guideGeneration.current) setError(describeError(err));
