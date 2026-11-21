@@ -474,3 +474,43 @@ def test_export_lock_prevents_concurrent_same_format_writes(client, monkeypatch)
     response = client.get(f"/singing/projects/{project_id}/export/mp3")
     assert response.status_code == 409
     assert lock.exists()  # never steal an owner lock
+
+
+def test_singing_export_rejects_symlinked_completed_audio(client, monkeypatch) -> None:
+    """A verified WAV cannot be replaced with a symlink, even to another project-local WAV."""
+    from pathlib import Path
+    from services.singing_project import singing_project_paths
+
+    project_id = _finished_vocal_project()
+    renders = Path(singing_router.SINGING_DIR) / singing_project_paths(project_id)["renders_dir"]
+    original = renders / "vocal_full.wav"
+    renamed = renders / "other.wav"
+    original.rename(renamed)
+    try:
+        original.symlink_to(renamed)
+    except (NotImplementedError, OSError):
+        pytest.skip("Filesystem symlinks are unavailable to this test process")
+    monkeypatch.setattr(singing_router, "find_ffmpeg", lambda: pytest.fail("unsafe file reached ffmpeg"))
+    response = client.get(f"/singing/projects/{project_id}/export/wav")
+    assert response.status_code == 400
+    assert renamed.read_bytes().startswith(b"RIFF")
+
+
+def test_singing_export_rejects_symlinked_existing_output(client, monkeypatch) -> None:
+    """An attacker-controlled export symlink must not serve a different artifact."""
+    from pathlib import Path
+    from services.singing_project import singing_project_paths
+
+    project_id = _finished_vocal_project()
+    renders = Path(singing_router.SINGING_DIR) / singing_project_paths(project_id)["renders_dir"]
+    other = renders / "other.mp3"
+    other.write_bytes(b"wrong audio, never serve")
+    output = renders / "vocal_full.mp3"
+    try:
+        output.symlink_to(other)
+    except (NotImplementedError, OSError):
+        pytest.skip("Filesystem symlinks are unavailable to this test process")
+    monkeypatch.setattr(singing_router, "find_ffmpeg", lambda: pytest.fail("unsafe file reached ffmpeg"))
+    response = client.get(f"/singing/projects/{project_id}/export/mp3")
+    assert response.status_code == 400
+    assert other.read_bytes() == b"wrong audio, never serve"
