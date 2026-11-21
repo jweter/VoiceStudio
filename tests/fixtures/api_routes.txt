@@ -278,6 +278,7 @@ POST /pronunciation/test
 POST /setup/warmup
 POST /singing/analyze
 POST /singing/preview
+POST /singing/render
 POST /stories/encode
 POST /system/crash/ack
 POST /system/diagnostic-bundle

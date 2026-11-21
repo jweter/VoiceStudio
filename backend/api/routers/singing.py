@@ -11,6 +11,7 @@ codes.
     GET  /singing/engines                        -> compatible singing-conversion engines
     POST /singing/analyze                        -> guide vocal F0 track + voiced segments
     POST /singing/preview                        -> bounded conversion preview + pitch comparison
+    POST /singing/render                         -> full render within server-owned duration cap
     GET  /singing/projects/{project_id}/audio/{which}  -> "guide" or "preview" WAV, for A/B playback
 """
 from __future__ import annotations
@@ -22,11 +23,12 @@ from pathlib import Path
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
-from core.config import SINGING_DIR, VOICES_DIR
+from core.config import SINGING_DIR, SINGING_FULL_RENDER_MAX_SECONDS, VOICES_DIR
 from core.db import db_conn
 from core.path_security import UnsafePath, resolve_within
 from services.singing_conversion import ConversionRequest, SingingConversionError
 from services.singing_pitch import F0Track
+from services.singing_full_render import render_full_singing
 from services.singing_preview import analyze_guide_vocal, compatible_singing_engines, render_preview
 from services.singing_project import create_singing_project, singing_project_paths
 
@@ -179,14 +181,60 @@ async def preview(
     }
 
 
+@router.post("/render")
+async def render_full(
+    project_id: str = Form(...),
+    engine_id: str = Form(...),
+    target_voice_profile_id: str = Form(...),
+) -> dict:
+    """Render the project's complete guide vocal with the S4 singing contract.
+
+    The duration cap comes from server configuration, never the client. Existing
+    project files and conversion outputs are never overwritten, and a missing
+    singing engine cannot silently fall back to speech synthesis.
+    """
+    layout = singing_project_paths(project_id)
+    if not layout:
+        raise HTTPException(status_code=400, detail="Invalid singing project id.")
+    guide_path = Path(SINGING_DIR) / layout["source_dir"] / "guide_vocal.wav"
+    if not guide_path.is_file():
+        raise HTTPException(status_code=404, detail="Guide vocal not found for this project.")
+    engine = _resolve_engine(engine_id)
+    target_voice = _resolve_target_voice(target_voice_profile_id)
+    request = ConversionRequest(
+        projects_root=Path(SINGING_DIR),
+        project_id=project_id,
+        guide_vocal=guide_path,
+        target_voice=target_voice,
+        output_name="vocal_full.wav",
+    )
+    try:
+        result = await asyncio.to_thread(
+            render_full_singing, engine, request, max_seconds=SINGING_FULL_RENDER_MAX_SECONDS,
+        )
+    except SingingConversionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {
+        "project_id": project_id,
+        "render_audio_url": f"/singing/projects/{project_id}/audio/full",
+        "duration_seconds": result.duration_seconds,
+        "guide_duration_seconds": result.guide_duration_seconds,
+        "within_tolerance": result.within_tolerance,
+        "engine_id": result.engine_id,
+        "engine_version": result.engine_version,
+        "provenance": result.provenance,
+    }
+
+
 @router.get("/projects/{project_id}/audio/{which}")
 def project_audio(project_id: str, which: str) -> FileResponse:
-    if which not in ("guide", "preview"):
+    if which not in ("guide", "preview", "full"):
         raise HTTPException(status_code=404, detail="Unknown singing workspace audio.")
     layout = singing_project_paths(project_id)
     if not layout:
         raise HTTPException(status_code=400, detail="Invalid singing project id.")
-    relative = f"{layout['source_dir']}/guide_vocal.wav" if which == "guide" else layout["preview"]
+    relative = (f"{layout['source_dir']}/guide_vocal.wav" if which == "guide"
+                else layout["vocal_full"] if which == "full" else layout["preview"])
     path = Path(SINGING_DIR) / relative
     if not path.is_file():
         raise HTTPException(status_code=404, detail="Audio not found for this project.")
