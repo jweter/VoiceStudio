@@ -431,7 +431,7 @@
         },
         {
           "id": "s5-full-render-codec-args",
-          "state": "PLANNED",
+          "state": "VERIFIED_COMPLETE",
           "capability_level": 1,
           "depends_on": [],
           "objective": "Return the ffmpeg audio codec arguments for a singing-export container format, matching VoiceStudio's existing dub-export codec table (wav -> ['-c:a','pcm_s16le'], m4a -> ['-c:a','aac','-b:a','192k'], mp3 -> ['-c:a','libmp3lame','-q:a','2'], flac -> ['-c:a','flac']). Match the format name case-insensitively with surrounding whitespace ignored; any other value, including empty, non-string-like or unrecognized input, falls back to the m4a codec args so a bad export request can never build a broken ffmpeg command. The function is total and never raises.",
@@ -460,6 +460,11 @@
             "offline"
           ],
           "runtime_requirements": [],
+          "verification": [
+            "backend/services/singing_export_format.py singing_export_codec_args and SINGING_EXPORT_CODEC_ARGS already implement the documented wav/m4a/mp3/flac codec-arg table, matching case-insensitively with surrounding whitespace stripped and falling back to the m4a args for any unrecognized, empty or non-string-like value.",
+            "tests/backend/services/test_singing_export_format.py: test_documented_formats, test_matching_ignores_case_and_surrounding_whitespace, test_unrecognized_or_non_string_input_falls_back_to_m4a, test_fallback_and_result_are_independent_copies cover every documented format plus the fallback.",
+            "Already delivered at the baseline and consumed by backend/api/routers/singing.py's export route and backend/services/singing_full_render.py per the s5-full-render-service slice's own verification; no files changed for this slice beyond this capability-graph entry."
+          ],
           "acceptance_examples": [
             {
               "call": "singing_export_codec_args('wav')",
@@ -485,7 +490,7 @@
         },
         {
           "id": "s5-full-render-duration-bound",
-          "state": "PLANNED",
+          "state": "VERIFIED_COMPLETE",
           "capability_level": 1,
           "depends_on": [],
           "objective": "Return None when guide_duration_seconds is positive, finite and at most max_seconds (the full-render duration cap); otherwise a short reason: 'Guide vocal duration must be positive.' if the duration is not positive, NaN or infinite; 'Full-render duration limit is not configured.' if max_seconds is not positive and finite; else 'Guide vocal is {guide_duration_seconds}s, longer than the {max_seconds}s full-render limit.'. Never raises.",
@@ -515,6 +520,11 @@
             "offline"
           ],
           "runtime_requirements": [],
+          "verification": [
+            "backend/services/singing_render_limits.py full_render_duration_error already implements the documented validation order and messages: duration positive/finite first, then cap positive/finite, then the over-limit message naming both values; never raises.",
+            "tests/backend/services/test_singing_render_limits.py: test_duration_within_cap_returns_none, test_invalid_duration_is_rejected_before_cap_is_checked, test_invalid_cap_is_rejected_once_duration_is_valid, test_duration_over_a_valid_cap_names_both_values, test_never_raises_on_non_numeric_input cover every branch.",
+            "Already delivered at the baseline and consumed by backend/api/routers/singing.py's POST /singing/render and backend/services/singing_full_render.py per the s5-full-render-service slice's own verification; no files changed for this slice beyond this capability-graph entry."
+          ],
           "acceptance_examples": [
             {
               "call": "full_render_duration_error(120.0, 600.0)",
@@ -589,7 +599,7 @@
         },
         {
           "id": "s5-export-ui",
-          "state": "PLANNED",
+          "state": "VERIFIED_COMPLETE",
           "capability_level": 4,
           "depends_on": [
             "s5-full-render-service",
@@ -623,11 +633,17 @@
             "local",
             "offline"
           ],
-          "runtime_requirements": []
+          "runtime_requirements": [],
+          "verification": [
+            "electron/src/renderer/src/features/singing/singing-page.tsx already adds the 'Render full vocal' action (runRenderFull/canRenderFull) and an export control (EXPORT_FORMATS wav/m4a/mp3/flac toggle plus SaveAudioButton driven by singingExportRequest) wired only to renderSingingFull/singingExportRequest in electron/src/renderer/src/lib/api/singing.ts, which call backend/api/routers/singing.py's POST /singing/render and GET /singing/projects/{project_id}/export/{container_format} -- never /generate.",
+            "electron/src/renderer/src/features/singing/singing-page.test.tsx::'shows the full-render duration-cap error instead of starting a render' and surrounding render/export tests exercise the full-render and export controls, including the duration-cap error path, against the fake-engine shape.",
+            "electron/src/renderer/src/i18n/locales/*.json (all 21 locale files) carry the singingWorkspace.render_full, export_kicker and export_format_label keys used by these controls.",
+            "Already delivered at the baseline (PR #41, merged as eca67fd3); no files changed for this slice beyond this capability-graph entry."
+          ]
         },
         {
           "id": "s5-full-render-cap-usage-percent",
-          "state": "PLANNED",
+          "state": "VERIFIED_COMPLETE",
           "capability_level": 1,
           "depends_on": [],
           "objective": "Return the percentage of the full-render duration cap consumed by a guide vocal, as a float rounded to one decimal place, clamped to the 0.0-100.0 range. A non-positive, NaN or infinite guide_duration_seconds returns 0.0. A non-positive, NaN or infinite max_seconds returns 0.0. A guide_duration_seconds at or below max_seconds returns (guide_duration_seconds / max_seconds) * 100 rounded to one decimal place. A guide_duration_seconds greater than max_seconds returns 100.0. Never raises.",
@@ -657,6 +673,11 @@
             "offline"
           ],
           "runtime_requirements": [],
+          "verification": [
+            "backend/services/singing_render_progress.py full_render_cap_usage_percent already implements the documented 0.0-100.0 clamped, one-decimal percentage, validating guide_duration_seconds and max_seconds with the same positive/finite rule as singing_render_limits.py.",
+            "tests/backend/services/test_singing_render_progress.py: test_duration_within_cap_returns_rounded_percentage, test_duration_over_cap_returns_exactly_100, test_invalid_duration_returns_zero_regardless_of_cap, test_invalid_cap_returns_zero_regardless_of_duration, test_invalid_duration_wins_over_invalid_cap, test_never_raises_on_non_numeric_input cover every branch.",
+            "Already delivered at the baseline (PR #42, merged as 441021d5); not yet wired into any UI or API response -- see the new s5-duration-and-cap-usage-ui slice below. No files changed for this slice beyond this capability-graph entry."
+          ],
           "acceptance_examples": [
             {
               "call": "full_render_cap_usage_percent(100.0, 300.0)",
@@ -682,7 +703,7 @@
         },
         {
           "id": "s5-singing-duration-display",
-          "state": "PLANNED",
+          "state": "VERIFIED_COMPLETE",
           "capability_level": 1,
           "depends_on": [],
           "objective": "Return a duration string formatted as M:SS, or as H:MM:SS once the duration reaches one hour. Round the input to the nearest whole second before formatting. Zero-pad seconds, and minutes when hours are shown, to two digits; the leading unit is never zero-padded. A negative, NaN, infinite or otherwise non-numeric value returns '0:00'. Never raises. Used to display guide and full-render vocal durations in the Singing workspace.",
@@ -734,7 +755,52 @@
               "expected": "0:00",
               "why": "a negative duration is invalid input and falls back to 0:00 instead of raising"
             }
+          ],
+          "verification": [
+            "backend/services/singing_duration_format.py format_singing_duration already implements the documented M:SS/H:MM:SS formatting, rounding to the nearest whole second and falling back to '0:00' for negative, NaN, infinite or non-numeric input.",
+            "tests/backend/services/test_singing_duration_format.py: test_under_one_minute_returns_0_ss, test_one_minute_to_under_one_hour_returns_m_ss, test_one_hour_or_more_returns_h_mm_ss, test_fractional_seconds_round_to_nearest_whole_second, test_invalid_input_returns_zero_without_raising cover every branch.",
+            "Already delivered at the baseline (PR #43, merged as 69223eed); not yet wired into any UI or API response -- see the new s5-duration-and-cap-usage-ui slice below. No files changed for this slice beyond this capability-graph entry."
           ]
+        },
+        {
+          "id": "s5-duration-and-cap-usage-ui",
+          "state": "PLANNED",
+          "capability_level": 4,
+          "depends_on": [
+            "s5-singing-duration-display",
+            "s5-full-render-cap-usage-percent",
+            "s5-export-ui"
+          ],
+          "objective": "Wire the already-delivered backend/services/singing_duration_format.py (format_singing_duration) and backend/services/singing_render_progress.py (full_render_cap_usage_percent) into the Singing workspace so they stop being dead code: once a guide vocal is analyzed, show its formatted duration and the percentage of the server-owned full-render duration cap (SINGING_FULL_RENDER_MAX_SECONDS) it would consume, before 'Render full vocal' is pressed; once a full render completes, show its duration with the same formatting. Expose both values from the backend (an added response field or a small read-only endpoint) so the Python functions remain the single source of truth; do not reimplement the formatting or percentage math in TypeScript. Render the values beside the existing render/export controls in electron/src/renderer/src/features/singing/singing-page.tsx. Roadmap: docs/OWNER_APPROVED_ROADMAP_2026-10-25.md Next slices item 3 (generation, preview).",
+          "acceptance": [
+            "once a guide vocal is analyzed, its duration is shown using format_singing_duration's M:SS/H:MM:SS formatting",
+            "before 'Render full vocal' is pressed, the workspace shows the full-render cap usage percentage from full_render_cap_usage_percent for the current guide vocal and the configured cap",
+            "after a full render completes, its duration is shown using the same formatting",
+            "both values are computed by the existing backend functions and exposed through an API response, never duplicated as separate client-side logic",
+            "Frontend and API behaviour are covered by the repository's native tests",
+            "Every new user-facing string goes through i18n and is present, translated, in all locale files under electron/src/renderer/src/i18n/locales",
+            "Canonical preflight, required CI checks and review pass at the exact head"
+          ],
+          "allowed_paths": [
+            "electron/**",
+            "backend/**",
+            "tests/**",
+            "docs/**"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ],
+          "runner_requirements": [
+            "code",
+            "local",
+            "offline"
+          ],
+          "runtime_requirements": []
         }
       ]
     }
