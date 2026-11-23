@@ -3223,6 +3223,9 @@
     "full_render_kicker": "Tam vokal oluşturma",
     "full_render_audio": "Tam vokal",
     "export_kicker": "Dışa aktar",
-    "export_format_label": "Dışa aktarma biçimi"
+    "export_format_label": "Dışa aktarma biçimi",
+    "guide_duration_label": "Kılavuz vokal süresi: {{duration}}",
+    "full_render_cap_usage": "{{cap}} tam render sınırının %{{percent}}'si",
+    "full_render_duration_label": "Render süresi: {{duration}}"
   }
 }

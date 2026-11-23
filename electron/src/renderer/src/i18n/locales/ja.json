@@ -3223,6 +3223,9 @@
     "full_render_kicker": "フルボーカルのレンダリング",
     "full_render_audio": "フルボーカル",
     "export_kicker": "エクスポート",
-    "export_format_label": "エクスポート形式"
+    "export_format_label": "エクスポート形式",
+    "guide_duration_label": "ガイドボーカルの長さ: {{duration}}",
+    "full_render_cap_usage": "フルレンダリング上限 {{cap}} の {{percent}}%",
+    "full_render_duration_label": "レンダリング時間: {{duration}}"
   }
 }

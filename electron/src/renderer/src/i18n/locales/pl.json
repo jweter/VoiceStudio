@@ -3227,6 +3227,9 @@
     "full_render_kicker": "Pełny render wokalu",
     "full_render_audio": "Pełny wokal",
     "export_kicker": "Eksport",
-    "export_format_label": "Format eksportu"
+    "export_format_label": "Format eksportu",
+    "guide_duration_label": "Czas trwania wokalu wzorcowego: {{duration}}",
+    "full_render_cap_usage": "{{percent}}% limitu pełnego renderowania ({{cap}})",
+    "full_render_duration_label": "Czas trwania renderu: {{duration}}"
   }
 }

@@ -3223,6 +3223,9 @@
     "full_render_kicker": "Bản dựng giọng hát đầy đủ",
     "full_render_audio": "Giọng hát đầy đủ",
     "export_kicker": "Xuất",
-    "export_format_label": "Định dạng xuất"
+    "export_format_label": "Định dạng xuất",
+    "guide_duration_label": "Thời lượng giọng hát dẫn: {{duration}}",
+    "full_render_cap_usage": "{{percent}}% giới hạn dựng đầy đủ {{cap}}",
+    "full_render_duration_label": "Thời lượng dựng: {{duration}}"
   }
 }

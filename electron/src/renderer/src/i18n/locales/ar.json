@@ -3231,6 +3231,9 @@
     "full_render_kicker": "توليد الصوت الغنائي الكامل",
     "full_render_audio": "الصوت الكامل",
     "export_kicker": "تصدير",
-    "export_format_label": "صيغة التصدير"
+    "export_format_label": "صيغة التصدير",
+    "guide_duration_label": "مدة الصوت المرجعي: {{duration}}",
+    "full_render_cap_usage": "{{percent}}% من الحد الأقصى للتوليد الكامل البالغ {{cap}}",
+    "full_render_duration_label": "مدة التوليد: {{duration}}"
   }
 }

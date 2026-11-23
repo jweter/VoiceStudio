@@ -3227,6 +3227,9 @@
     "full_render_kicker": "Рендер повного вокалу",
     "full_render_audio": "Повний вокал",
     "export_kicker": "Експорт",
-    "export_format_label": "Формат експорту"
+    "export_format_label": "Формат експорту",
+    "guide_duration_label": "Тривалість провідного вокалу: {{duration}}",
+    "full_render_cap_usage": "{{percent}}% від ліміту повного рендеру {{cap}}",
+    "full_render_duration_label": "Тривалість рендеру: {{duration}}"
   }
 }

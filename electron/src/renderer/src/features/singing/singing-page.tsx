@@ -276,6 +276,16 @@ export function SingingPage() {
             )}
             {t('singingWorkspace.render_full')}
           </Button>
+          {analysis && !fullRender && (
+            <span className="text-xs text-muted-foreground">
+              {t('singingWorkspace.guide_duration_label', { duration: analysis.guide_duration_formatted })}
+              {' · '}
+              {t('singingWorkspace.full_render_cap_usage', {
+                percent: analysis.full_render_cap_usage_percent,
+                cap: analysis.full_render_max_seconds_formatted,
+              })}
+            </span>
+          )}
         </div>
 
         {(analysis || preview) && (
@@ -336,6 +346,9 @@ export function SingingPage() {
                     source="singing-full-render"
                   />
                   {t('singingWorkspace.full_render_audio')}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {t('singingWorkspace.full_render_duration_label', { duration: fullRender.duration_formatted })}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">

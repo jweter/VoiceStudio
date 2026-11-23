@@ -29,13 +29,15 @@ from core.config import SINGING_DIR, SINGING_FULL_RENDER_MAX_SECONDS, VOICES_DIR
 from core.http_headers import content_disposition
 from core.db import db_conn
 from core.path_security import UnsafePath, resolve_within
-from services.singing_conversion import ConversionRequest, SingingConversionError
+from services.singing_conversion import ConversionRequest, SingingConversionError, wav_duration_seconds
+from services.singing_duration_format import format_singing_duration
 from services.singing_pitch import F0Track
 from services.singing_export_format import SINGING_EXPORT_CODEC_ARGS, singing_export_codec_args
 from services.singing_full_render import render_full_singing
 from services.ffmpeg_utils import find_ffmpeg, run_ffmpeg
 from services.singing_preview import analyze_guide_vocal, compatible_singing_engines, render_preview
 from services.singing_project import create_singing_project, singing_project_paths
+from services.singing_render_progress import full_render_cap_usage_percent
 
 router = APIRouter(prefix="/singing", tags=["singing"])
 
@@ -133,6 +135,7 @@ async def analyze(guide_vocal: UploadFile = File(...)) -> dict:
         # Pitch extraction is CPU-bound for the whole song: keep it off the event loop so
         # /health and every other request stay served while it runs.
         result = await asyncio.to_thread(analyze_guide_vocal, guide_path)
+        guide_duration_seconds, _ = wav_duration_seconds(guide_path)
     except SingingConversionError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {
@@ -142,6 +145,12 @@ async def analyze(guide_vocal: UploadFile = File(...)) -> dict:
         "voiced_segments": [
             {"start_seconds": start, "end_seconds": end} for start, end in result.voiced_segments
         ],
+        "guide_duration_seconds": guide_duration_seconds,
+        "guide_duration_formatted": format_singing_duration(guide_duration_seconds),
+        "full_render_cap_usage_percent": full_render_cap_usage_percent(
+            guide_duration_seconds, SINGING_FULL_RENDER_MAX_SECONDS
+        ),
+        "full_render_max_seconds_formatted": format_singing_duration(SINGING_FULL_RENDER_MAX_SECONDS),
     }
 
 
@@ -223,6 +232,7 @@ async def render_full(
         "project_id": project_id,
         "render_audio_url": f"/singing/projects/{project_id}/audio/full",
         "duration_seconds": result.duration_seconds,
+        "duration_formatted": format_singing_duration(result.duration_seconds),
         "guide_duration_seconds": result.guide_duration_seconds,
         "within_tolerance": result.within_tolerance,
         "engine_id": result.engine_id,

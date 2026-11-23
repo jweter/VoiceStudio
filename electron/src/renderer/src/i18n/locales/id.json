@@ -3223,6 +3223,9 @@
     "full_render_kicker": "Render vokal lengkap",
     "full_render_audio": "Vokal lengkap",
     "export_kicker": "Ekspor",
-    "export_format_label": "Format ekspor"
+    "export_format_label": "Format ekspor",
+    "guide_duration_label": "Durasi vokal panduan: {{duration}}",
+    "full_render_cap_usage": "{{percent}}% dari batas render lengkap {{cap}}",
+    "full_render_duration_label": "Durasi render: {{duration}}"
   }
 }

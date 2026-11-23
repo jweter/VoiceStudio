@@ -3223,6 +3223,9 @@
     "full_render_kicker": "Volledige zangrendering",
     "full_render_audio": "Volledige zang",
     "export_kicker": "Exporteren",
-    "export_format_label": "Exportformaat"
+    "export_format_label": "Exportformaat",
+    "guide_duration_label": "Duur van de gidsvocaal: {{duration}}",
+    "full_render_cap_usage": "{{percent}}% van de volledige renderlimiet van {{cap}}",
+    "full_render_duration_label": "Renderduur: {{duration}}"
   }
 }

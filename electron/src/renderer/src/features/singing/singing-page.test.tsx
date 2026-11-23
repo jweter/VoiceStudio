@@ -157,6 +157,10 @@ it('analyzes a guide vocal and renders its pitch trace', async () => {
       { time_seconds: 0.1, frequency_hz: 224, voiced: true },
     ],
     voiced_segments: [{ start_seconds: 0, end_seconds: 0.1 }],
+    guide_duration_seconds: 2,
+    guide_duration_formatted: '0:02',
+    full_render_cap_usage_percent: 0.3,
+    full_render_max_seconds_formatted: '10:00',
   });
   mount();
   await waitFor(() => expect(mock.listEngines).toHaveBeenCalled());
@@ -168,6 +172,8 @@ it('analyzes a guide vocal and renders its pitch trace', async () => {
   expect(await screen.findByRole('img', { name: /pitch/i })).toBeInTheDocument();
   expect(screen.getByText(/guide f0/i)).toBeInTheDocument();
   expect(screen.queryByText(/output f0/i)).not.toBeInTheDocument();
+  expect(screen.getByText(/guide vocal duration: 0:02/i)).toBeInTheDocument();
+  expect(screen.getByText(/0\.3% of the 10:00 full-render limit/i)).toBeInTheDocument();
 });
 
 it('generates a preview and plays both the original and the converted take', async () => {
@@ -258,6 +264,10 @@ it('discards an analysis that finishes after a different guide vocal was chosen'
       guide_audio_url: '/singing/projects/first/audio/guide',
       guide_f0: [{ time_seconds: 0, frequency_hz: 220, voiced: true }],
       voiced_segments: [{ start_seconds: 0, end_seconds: 0.1 }],
+      guide_duration_seconds: 2,
+      guide_duration_formatted: '0:02',
+      full_render_cap_usage_percent: 0.3,
+      full_render_max_seconds_formatted: '10:00',
     });
   });
 
@@ -274,6 +284,10 @@ async function setUpProject() {
     guide_audio_url: '/singing/projects/p1/audio/guide',
     guide_f0: [{ time_seconds: 0, frequency_hz: 220, voiced: true }],
     voiced_segments: [{ start_seconds: 0, end_seconds: 0.1 }],
+    guide_duration_seconds: 2,
+    guide_duration_formatted: '0:02',
+    full_render_cap_usage_percent: 0.3,
+    full_render_max_seconds_formatted: '10:00',
   });
   mount();
   await waitFor(() => expect(mock.listEngines).toHaveBeenCalled());
@@ -308,6 +322,7 @@ it('renders the full vocal and lets the user export and save it to disk', async 
     project_id: 'p1',
     render_audio_url: '/singing/projects/p1/audio/full',
     duration_seconds: 120,
+    duration_formatted: '2:00',
     guide_duration_seconds: 120,
     within_tolerance: true,
     engine_id: 'fake-engine',
@@ -323,6 +338,7 @@ it('renders the full vocal and lets the user export and save it to disk', async 
   expect(await screen.findByTestId('singing-full-render')).toHaveTextContent(
     '/api/singing/projects/p1/audio/full',
   );
+  expect(screen.getByText(/render duration: 2:00/i)).toBeInTheDocument();
 
   const mp3Button = screen.getByRole('button', { name: 'MP3' });
   fireEvent.click(mp3Button);

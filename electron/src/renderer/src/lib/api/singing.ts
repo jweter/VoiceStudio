@@ -25,6 +25,10 @@ export interface SingingAnalyzeResult {
   guide_audio_url: string;
   guide_f0: F0FramePayload[];
   voiced_segments: { start_seconds: number; end_seconds: number }[];
+  guide_duration_seconds: number;
+  guide_duration_formatted: string;
+  full_render_cap_usage_percent: number;
+  full_render_max_seconds_formatted: string;
 }
 
 export interface SingingPreviewResult {
@@ -72,6 +76,7 @@ export interface SingingFullRenderResult {
   project_id: string;
   render_audio_url: string;
   duration_seconds: number;
+  duration_formatted: string;
   guide_duration_seconds: number;
   within_tolerance: boolean;
   engine_id: string;

@@ -3225,6 +3225,9 @@
     "full_render_kicker": "Rendering della voce completa",
     "full_render_audio": "Voce completa",
     "export_kicker": "Esporta",
-    "export_format_label": "Formato di esportazione"
+    "export_format_label": "Formato di esportazione",
+    "guide_duration_label": "Durata della voce guida: {{duration}}",
+    "full_render_cap_usage": "{{percent}}% del limite di rendering completo di {{cap}}",
+    "full_render_duration_label": "Durata del rendering: {{duration}}"
   }
 }

@@ -3225,6 +3225,9 @@
     "full_render_kicker": "Rendu du chant complet",
     "full_render_audio": "Chant complet",
     "export_kicker": "Exporter",
-    "export_format_label": "Format d'export"
+    "export_format_label": "Format d'export",
+    "guide_duration_label": "Durée de la voix guide : {{duration}}",
+    "full_render_cap_usage": "{{percent}}% de la limite de rendu complet de {{cap}}",
+    "full_render_duration_label": "Durée du rendu : {{duration}}"
   }
 }
