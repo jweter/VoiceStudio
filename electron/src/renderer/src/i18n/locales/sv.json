@@ -3223,6 +3223,9 @@
     "full_render_kicker": "Rendering av fullständig sång",
     "full_render_audio": "Fullständig sång",
     "export_kicker": "Exportera",
-    "export_format_label": "Exportformat"
+    "export_format_label": "Exportformat",
+    "guide_duration_label": "Guidesångens längd: {{duration}}",
+    "full_render_cap_usage": "{{percent}}% av gränsen för fullständig rendering på {{cap}}",
+    "full_render_duration_label": "Renderingens längd: {{duration}}"
   }
 }

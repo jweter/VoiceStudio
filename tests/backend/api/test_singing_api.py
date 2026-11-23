@@ -144,7 +144,7 @@ def test_list_engines_includes_the_singing_capable_engine_and_excludes_the_speec
 def test_analyze_returns_f0_track_and_project(client) -> None:
     response = client.post(
         "/singing/analyze",
-        files={"guide_vocal": ("guide.wav", _wav_bytes(), "audio/wav")},
+        files={"guide_vocal": ("guide.wav", _wav_bytes(seconds=2.0), "audio/wav")},
     )
     assert response.status_code == 200
     body = response.json()
@@ -158,6 +158,22 @@ def test_analyze_returns_f0_track_and_project(client) -> None:
     audio_response = client.get(body["guide_audio_url"])
     assert audio_response.status_code == 200
     assert audio_response.headers["content-type"] == "audio/wav"
+
+
+def test_analyze_exposes_guide_duration_and_full_render_cap_usage(client, monkeypatch) -> None:
+    # Review: the already-delivered format_singing_duration/full_render_cap_usage_percent
+    # functions are the single source of truth; this router must call them, not reimplement them.
+    monkeypatch.setattr(singing_router, "SINGING_FULL_RENDER_MAX_SECONDS", 10.0)
+    response = client.post(
+        "/singing/analyze",
+        files={"guide_vocal": ("guide.wav", _wav_bytes(seconds=2.0), "audio/wav")},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["guide_duration_seconds"] == pytest.approx(2.0)
+    assert body["guide_duration_formatted"] == "0:02"
+    assert body["full_render_cap_usage_percent"] == pytest.approx(20.0)
+    assert body["full_render_max_seconds_formatted"] == "0:10"
 
 
 def test_analyze_rejects_a_non_wav_upload(client) -> None:
@@ -305,6 +321,7 @@ def test_full_render_uses_existing_s4_engine_and_exposes_entire_wav(client, targ
     body = response.json()
     assert body["project_id"] == project_id
     assert body["duration_seconds"] == pytest.approx(2.0)
+    assert body["duration_formatted"] == "0:02"
     assert body["guide_duration_seconds"] == pytest.approx(2.0)
     assert body["within_tolerance"]
     assert body["engine_id"] == _FakeSingingEngine.id

@@ -3223,6 +3223,9 @@
     "full_render_kicker": "전체 보컬 렌더링",
     "full_render_audio": "전체 보컬",
     "export_kicker": "내보내기",
-    "export_format_label": "내보내기 형식"
+    "export_format_label": "내보내기 형식",
+    "guide_duration_label": "가이드 보컬 길이: {{duration}}",
+    "full_render_cap_usage": "전체 렌더링 한도 {{cap}}의 {{percent}}%",
+    "full_render_duration_label": "렌더링 길이: {{duration}}"
   }
 }

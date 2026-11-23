@@ -3223,6 +3223,9 @@
     "full_render_kicker": "पूर्ण वोकल रेंडर",
     "full_render_audio": "पूर्ण वोकल",
     "export_kicker": "निर्यात",
-    "export_format_label": "निर्यात प्रारूप"
+    "export_format_label": "निर्यात प्रारूप",
+    "guide_duration_label": "गाइड वोकल की अवधि: {{duration}}",
+    "full_render_cap_usage": "{{cap}} की पूर्ण रेंडर सीमा का {{percent}}%",
+    "full_render_duration_label": "रेंडर अवधि: {{duration}}"
   }
 }

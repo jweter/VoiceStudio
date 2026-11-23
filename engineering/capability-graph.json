@@ -764,7 +764,7 @@
         },
         {
           "id": "s5-duration-and-cap-usage-ui",
-          "state": "PLANNED",
+          "state": "VERIFIED_COMPLETE",
           "capability_level": 4,
           "depends_on": [
             "s5-singing-duration-display",
@@ -800,7 +800,180 @@
             "local",
             "offline"
           ],
-          "runtime_requirements": []
+          "runtime_requirements": [],
+          "verification": [
+            "backend/api/routers/singing.py's POST /singing/analyze now calls services.singing_conversion.wav_duration_seconds, services.singing_duration_format.format_singing_duration and services.singing_render_progress.full_render_cap_usage_percent, returning guide_duration_seconds, guide_duration_formatted, full_render_cap_usage_percent and full_render_max_seconds_formatted; POST /singing/render now also returns duration_formatted via format_singing_duration(result.duration_seconds). Neither the formatting nor the percentage math is reimplemented in TypeScript -- both response payloads carry only the backend functions' own output.",
+            "electron/src/renderer/src/lib/api/singing.ts's SingingAnalyzeResult and SingingFullRenderResult types carry the four new fields; electron/src/renderer/src/features/singing/singing-page.tsx renders analysis.guide_duration_formatted and analysis.full_render_cap_usage_percent beside the Analyze/Generate/Render controls whenever a guide vocal is analyzed and no full render exists yet, and renders fullRender.duration_formatted beside the full-render audio control once a render completes.",
+            "tests/backend/api/test_singing_api.py::test_analyze_exposes_guide_duration_and_full_render_cap_usage and the duration_formatted assertion added to test_full_render_uses_existing_s4_engine_and_exposes_entire_wav cover the new API fields against the existing fake-engine shape.",
+            "electron/src/renderer/src/features/singing/singing-page.test.tsx's 'analyzes a guide vocal and renders its pitch trace' and 'renders the full vocal and lets the user export and save it to disk' tests assert the rendered guide-duration/cap-usage text and the full-render duration text.",
+            "The three new i18n keys (singingWorkspace.guide_duration_label, singingWorkspace.full_render_cap_usage, singingWorkspace.full_render_duration_label) are present and translated in all 21 files under electron/src/renderer/src/i18n/locales."
+          ]
+        },
+        {
+          "id": "s5-full-render-seconds-remaining",
+          "state": "PLANNED",
+          "capability_level": 1,
+          "depends_on": [],
+          "objective": "Return the seconds left in the full-render cap after guide_duration_seconds, rounded to one decimal place. A non-positive, NaN or infinite max_seconds returns 0.0. A non-positive, NaN or infinite guide_duration_seconds returns max_seconds unchanged (none of the cap is treated as consumed). A guide_duration_seconds at or beyond a valid max_seconds returns 0.0. Otherwise returns max_seconds minus guide_duration_seconds, rounded to one decimal place. Never raises, even for non-numeric input.",
+          "acceptance": [
+            "a guide duration within the cap returns the exact remaining seconds rounded to one decimal place",
+            "a guide duration at or beyond the cap returns exactly 0.0",
+            "a non-positive, NaN or infinite guide duration returns the full max_seconds unchanged",
+            "a non-positive, NaN or infinite max_seconds returns 0.0 regardless of the guide duration",
+            "repository-native tests cover every branch, and no existing behavior changes"
+          ],
+          "allowed_paths": [
+            "backend/services/singing_render_budget.py",
+            "tests/backend/services/test_singing_render_budget.py"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ],
+          "runner_requirements": [
+            "code",
+            "local",
+            "offline"
+          ],
+          "runtime_requirements": [],
+          "acceptance_examples": [
+            {
+              "call": "full_render_seconds_remaining(100.0, 600.0)",
+              "expected": 500.0,
+              "why": "100s used of a 600s cap leaves 500s of budget remaining"
+            },
+            {
+              "call": "full_render_seconds_remaining(700.0, 600.0)",
+              "expected": 0.0,
+              "why": "a guide vocal at or beyond the cap leaves no remaining budget"
+            },
+            {
+              "call": "full_render_seconds_remaining(0.0, 600.0)",
+              "expected": 600.0,
+              "why": "a non-positive guide duration is treated as consuming none of the cap, so the full cap remains"
+            },
+            {
+              "call": "full_render_seconds_remaining(120.0, 0.0)",
+              "expected": 0.0,
+              "why": "an invalid (non-positive) cap can't be measured against, so remaining budget is reported as zero"
+            }
+          ]
+        },
+        {
+          "id": "s5-full-render-cap-status",
+          "state": "PLANNED",
+          "capability_level": 1,
+          "depends_on": [
+            "s5-full-render-cap-usage-percent"
+          ],
+          "objective": "Return 'within_limit' when usage_percent is less than 90.0, 'near_limit' when usage_percent is at least 90.0 and less than 100.0, and 'at_limit' when usage_percent is 100.0 or more, classifying the full-render cap usage percentage from full_render_cap_usage_percent into a coarse warning tier for the generation step. A negative usage_percent is treated as 0.0 (within_limit) before classification. NaN, infinite or otherwise non-numeric input returns 'within_limit' as the safe default rather than raising. Never raises.",
+          "acceptance": [
+            "a usage percentage under 90.0 returns 'within_limit'",
+            "a usage percentage at or above 90.0 and under 100.0 returns 'near_limit'",
+            "a usage percentage at or above 100.0 returns 'at_limit'",
+            "a negative usage percentage is treated as 0.0 and returns 'within_limit'",
+            "NaN, infinite or non-numeric input returns 'within_limit' instead of raising",
+            "repository-native tests cover every branch, and no existing behavior changes"
+          ],
+          "allowed_paths": [
+            "backend/services/singing_render_cap_status.py",
+            "tests/backend/services/test_singing_render_cap_status.py"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ],
+          "runner_requirements": [
+            "code",
+            "local",
+            "offline"
+          ],
+          "runtime_requirements": [],
+          "acceptance_examples": [
+            {
+              "call": "full_render_cap_usage_status(50.0)",
+              "expected": "within_limit",
+              "why": "well under the cap, no warning is needed"
+            },
+            {
+              "call": "full_render_cap_usage_status(95.0)",
+              "expected": "near_limit",
+              "why": "90% or more but under 100% triggers the near-cap warning tier"
+            },
+            {
+              "call": "full_render_cap_usage_status(100.0)",
+              "expected": "at_limit",
+              "why": "100% or more means the render would be refused by full_render_duration_error"
+            },
+            {
+              "call": "full_render_cap_usage_status(float('nan'))",
+              "expected": "within_limit",
+              "why": "non-numeric input falls back to the safe default rather than raising"
+            }
+          ]
+        },
+        {
+          "id": "s5-export-filename",
+          "state": "PLANNED",
+          "capability_level": 1,
+          "depends_on": [],
+          "objective": "Return a safe download filename for a singing project's export as 'voicestudio-singing-{id}.{ext}', where id is project_id with every character other than an ASCII letter, digit, '-' or '_' replaced by '_', and ext is container_format lowercased with surrounding whitespace stripped. An empty project_id, or one that sanitizes to an empty string, uses the literal id 'export'. An empty or whitespace-only container_format uses the literal extension 'wav'. Any input is coerced to text via str() first, so this never raises.",
+          "acceptance": [
+            "a project id made only of letters, digits, '-' and '_' is preserved exactly",
+            "every character in project_id outside that safe set is replaced with '_'",
+            "an empty project id, or one that sanitizes to an empty string, falls back to the literal id 'export'",
+            "the container format is lowercased and has surrounding whitespace stripped",
+            "an empty or whitespace-only container format falls back to the literal extension 'wav'",
+            "repository-native tests cover every branch, and no existing behavior changes"
+          ],
+          "allowed_paths": [
+            "backend/services/singing_export_filename.py",
+            "tests/backend/services/test_singing_export_filename.py"
+          ],
+          "forbidden_paths": [
+            ".github/**",
+            "private/**",
+            ".env",
+            "**/*.pem",
+            "**/*.key",
+            "engineering/**"
+          ],
+          "runner_requirements": [
+            "code",
+            "local",
+            "offline"
+          ],
+          "runtime_requirements": [],
+          "acceptance_examples": [
+            {
+              "call": "singing_export_filename('abc123', 'WAV')",
+              "expected": "voicestudio-singing-abc123.wav",
+              "why": "safe characters are preserved and the extension is lowercased"
+            },
+            {
+              "call": "singing_export_filename('proj:a/b', 'mp3')",
+              "expected": "voicestudio-singing-proj_a_b.mp3",
+              "why": "unsafe characters ':' and '/' are each replaced with '_'"
+            },
+            {
+              "call": "singing_export_filename('', 'flac')",
+              "expected": "voicestudio-singing-export.flac",
+              "why": "an empty project id falls back to the literal 'export' stem"
+            },
+            {
+              "call": "singing_export_filename('abc', '  ')",
+              "expected": "voicestudio-singing-abc.wav",
+              "why": "a blank container format falls back to the default wav extension"
+            }
+          ]
         }
       ]
     }

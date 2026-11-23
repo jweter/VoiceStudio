@@ -3223,6 +3223,9 @@
     "full_render_kicker": "完整人聲渲染",
     "full_render_audio": "完整人聲",
     "export_kicker": "匯出",
-    "export_format_label": "匯出格式"
+    "export_format_label": "匯出格式",
+    "guide_duration_label": "引導人聲時長：{{duration}}",
+    "full_render_cap_usage": "佔完整渲染上限 {{cap}} 的 {{percent}}%",
+    "full_render_duration_label": "渲染時長：{{duration}}"
   }
 }

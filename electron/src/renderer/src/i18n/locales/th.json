@@ -3223,6 +3223,9 @@
     "full_render_kicker": "การเรนเดอร์เสียงร้องแบบเต็ม",
     "full_render_audio": "เสียงร้องแบบเต็ม",
     "export_kicker": "ส่งออก",
-    "export_format_label": "รูปแบบการส่งออก"
+    "export_format_label": "รูปแบบการส่งออก",
+    "guide_duration_label": "ความยาวเสียงนำทาง: {{duration}}",
+    "full_render_cap_usage": "{{percent}}% ของขีดจำกัดการเรนเดอร์แบบเต็ม {{cap}}",
+    "full_render_duration_label": "ความยาวของการเรนเดอร์: {{duration}}"
   }
 }
