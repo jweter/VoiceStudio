@@ -21,6 +21,7 @@ neutral baseline (the unstyled, cloned-voice delivery), never to a stronger styl
 from __future__ import annotations
 
 import math
+import sys
 from collections.abc import Mapping
 
 # Dimension -> (minimum, neutral, maximum, cap).  ``neutral`` is the baseline cloned-voice
@@ -60,10 +61,18 @@ _DECIMALS = 4
 
 
 def _number(value: object) -> float | None:
-    """Return ``value`` as a finite float, or ``None`` for bools, non-numbers, NaN and infinity."""
+    """Return ``value`` as a finite float, or ``None`` for bools, non-numbers, NaN and infinity.
+
+    An integer beyond float range becomes the largest finite float of its sign.
+    """
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
-    number = float(value)
+    try:
+        number = float(value)
+    except OverflowError:
+        # An integer too large for a float is still a finite number; it clamps to the range
+        # like any other out-of-range value instead of raising.
+        return sys.float_info.max if value > 0 else -sys.float_info.max
     return number if math.isfinite(number) else None
 
 

@@ -251,6 +251,51 @@ def test_blend_never_leaves_a_dimension_range_and_carries_no_identity():
             assert DIMENSIONS[name]["min"] <= blended[name] <= DIMENSIONS[name]["max"]
 
 
+HUGE = 10**400
+
+
+def test_normalize_clamps_integers_too_large_for_a_float():
+    profile = normalize_style({"energy": HUGE, "register": -HUGE, "grit": -HUGE})
+    assert profile["energy"] == 1.0
+    assert profile["register"] == -1.0
+    assert profile["grit"] == 0.0
+
+
+def test_strength_treats_integers_too_large_for_a_float_as_the_range_ends():
+    preset = {"breathiness": 0.4}
+    assert apply_style_strength(preset, HUGE) == apply_style_strength(preset, 100)
+    assert apply_style_strength(preset, -HUGE) == neutral_style()
+
+
+def test_oversized_integers_inside_a_preset_do_not_raise_through_strength():
+    # The preset clamps to 1.0; neutral 0.4 plus the 0.6 cap lands exactly on the range end.
+    assert apply_style_strength({"energy": HUGE}, 100)["energy"] == 1.0
+    assert apply_style_strength({"energy": -HUGE}, 100)["energy"] == 0.0
+
+
+def test_overrides_clamp_integers_too_large_for_a_float():
+    result = apply_style_overrides({}, {"register": HUGE, "energy": -HUGE})
+    assert result["register"] == 1.0
+    assert result["energy"] == 0.0
+
+
+def test_blend_clamps_a_mix_that_is_an_integer_too_large_for_a_float():
+    a = normalize_style({"energy": 0.2})
+    b = normalize_style({"energy": 0.8})
+    assert blend_styles(a, b, HUGE) == b
+    assert blend_styles(a, b, -HUGE) == a
+
+
+def test_integers_arriving_through_json_are_handled():
+    import json
+
+    raw = json.loads('{"energy": 1' + "0" * 400 + ', "register": -1' + "0" * 400 + "}")
+    assert isinstance(raw["energy"], int)
+    profile = normalize_style(raw)
+    assert profile["energy"] == 1.0
+    assert profile["register"] == -1.0
+
+
 def test_style_dimensions_returns_a_copy():
     dims = style_dimensions()
     dims["energy"]["cap"] = 99
