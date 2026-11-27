@@ -25,6 +25,9 @@ from collections.abc import Mapping, Sequence
 from services.singing_style_profile import style_dimensions
 
 _MIN_VIBRATO_SECONDS = 1.0
+# Below this oscillation amplitude there is no audible vibrato: a pure glide or steady tone leaves
+# only floating-point residue after detrending, whose sign changes must not be counted as a rate.
+_MIN_VIBRATO_DEPTH_CENTS = 2.0
 
 
 def _is_number(value: object) -> bool:
@@ -106,8 +109,11 @@ def vibrato_stats(f0_hz: object, frame_rate_hz: object) -> dict[str, float] | No
 
     The run's pitch contour is converted to cents and its linear trend removed, so a slow
     glide is not mistaken for vibrato.  Rate is half the number of zero crossings per second;
-    depth is the amplitude of the oscillation (RMS * sqrt(2)).  ``None`` when the frame rate
-    is invalid, the input is not a sequence, or the run is shorter than one second.
+    depth is the amplitude of the oscillation (RMS * sqrt(2)).  When that depth is under
+    2 cents there is no vibrato to time, so the rate is reported as 0.0 (numerical noise from a
+    glide or a steady tone is never counted as oscillation) and the measured depth is still
+    returned.  ``None`` when the frame rate is invalid, the input is not a sequence, or the run
+    is shorter than one second.
     """
     seq = _sequence(f0_hz)
     if seq is None or not _is_number(frame_rate_hz) or float(frame_rate_hz) <= 0:  # type: ignore[arg-type]
@@ -130,10 +136,9 @@ def vibrato_stats(f0_hz: object, frame_rate_hz: object) -> dict[str, float] | No
     )
     duration_s = count / frame_rate
     rms = math.sqrt(sum(value * value for value in detrended) / count)
-    return {
-        "rate_hz": (crossings / 2.0) / duration_s,
-        "depth_cents": rms * math.sqrt(2.0),
-    }
+    depth_cents = rms * math.sqrt(2.0)
+    rate_hz = (crossings / 2.0) / duration_s if depth_cents >= _MIN_VIBRATO_DEPTH_CENTS else 0.0
+    return {"rate_hz": rate_hz, "depth_cents": depth_cents}
 
 
 def identity_floor_check(similarity: object, floor: object) -> str:

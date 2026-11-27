@@ -140,6 +140,44 @@ def test_only_the_longest_voiced_run_is_measured():
     assert stats["rate_hz"] == pytest.approx(5.0, abs=0.5)
 
 
+def _glide(cents_per_second, *, seconds=2.0, fps=100.0, base_hz=220.0):
+    return [base_hz * 2 ** ((cents_per_second * i / fps) / 1200.0) for i in range(int(seconds * fps))]
+
+
+def test_a_pure_glide_has_no_vibrato_rate_and_no_depth():
+    # Regression (Codex review): detrending leaves ~1e-13 cent residue whose sign changes
+    # were counted as a 23.5 Hz vibrato.
+    stats = vibrato_stats(_glide(100.0), 100.0)
+    assert stats is not None
+    assert stats["rate_hz"] == 0.0
+    assert stats["depth_cents"] < 1e-6
+
+
+def test_glides_of_any_slope_and_direction_report_no_vibrato_rate():
+    for slope in (-400.0, -37.0, 0.0, 5.0, 250.0, 1200.0):
+        stats = vibrato_stats(_glide(slope), 100.0)
+        assert stats["rate_hz"] == 0.0, slope
+        assert stats["depth_cents"] < 1e-6, slope
+
+
+def test_a_glide_with_sub_threshold_wobble_still_reports_no_rate():
+    wobble = _vibrato_contour(6.0, 1.0, drift_cents=200.0)  # 1 cent of wobble is inaudible
+    stats = vibrato_stats(wobble, 100.0)
+    assert stats["rate_hz"] == 0.0
+    assert stats["depth_cents"] == pytest.approx(1.0, abs=0.3)
+
+
+def test_vibrato_just_above_the_threshold_is_still_timed():
+    stats = vibrato_stats(_vibrato_contour(5.0, 3.0), 100.0)
+    assert stats["rate_hz"] == pytest.approx(5.0, abs=0.5)
+    assert stats["depth_cents"] == pytest.approx(3.0, abs=0.5)
+
+
+def test_a_glide_with_real_vibrato_keeps_its_rate():
+    stats = vibrato_stats(_vibrato_contour(5.0, 30.0, drift_cents=300.0), 100.0)
+    assert stats["rate_hz"] == pytest.approx(5.0, abs=0.7)
+
+
 @pytest.mark.parametrize(
     "f0, fps",
     [
